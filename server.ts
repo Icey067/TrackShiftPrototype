@@ -476,7 +476,7 @@ async function startServer() {
   }
 
   server.listen(PORT, '0.0.0.0', () => {
-    console.log(`AI Motorsport Intelligence Server active on http://0.0.0.0:${PORT}`);
+    console.log(`AI Motorsport Intelligence Server active on http://localhost:${PORT}`);
   });
 }
 
