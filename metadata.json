@@ -1,0 +1,6 @@
+{
+  "name": "AI Motorsport Intelligence - F1 Telemetry & Tyre Degradation",
+  "description": "Real-time F1 telemetry noise-cancellation pipeline isolating true tyre degradation from fuel burn, track evolution, and aerodynamic wake.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
