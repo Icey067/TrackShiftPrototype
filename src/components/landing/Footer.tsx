@@ -1,92 +1,153 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useApp } from '../../context/AppContext';
-import { Zap, Github, ArrowRight } from 'lucide-react';
+import { Play, Zap } from 'lucide-react';
 
-export function Footer() {
-  const { openAuthModal } = useApp();
+export default function Footer() {
+  const { openAuthModal, demoLogin } = useApp();
+  const footerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    if (!footerRef.current) return;
+
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: footerRef.current,
+          start: 'top 75%',
+          end: 'bottom 20%',
+          toggleActions: 'play none none reverse',
+        },
+      });
+
+      // Animate top footer content
+      tl.from('.footer-top > div, .footer-top a, .footer-top button', {
+        y: 35,
+        opacity: 0,
+        duration: 0.6,
+        ease: 'power3.out',
+        stagger: 0.1,
+      });
+
+      // Animate big TRACK SHIFT per letter
+      tl.from(
+        '.footer-title span',
+        {
+          yPercent: 120,
+          opacity: 0,
+          duration: 0.6,
+          ease: 'power4.out',
+          stagger: 0.04,
+        },
+        '-=0.3'
+      );
+    }, footerRef);
+
+    return () => ctx.revert();
+  }, []);
 
   return (
-    <footer className="relative border-t border-slate-800/50 bg-carbon-base">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-          {/* Brand */}
-          <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <Zap className="w-5 h-5 text-kinetic-cyan" />
-              <span className="font-mono text-sm font-bold text-white tracking-wider">
-                APEXSHIFT <span className="text-slate-500">//</span>{' '}
-                <span className="text-kinetic-cyan">2026 ERS</span>
-              </span>
-            </div>
-            <p className="font-mono text-xs text-slate-500 leading-relaxed max-w-sm mb-6">
-              Precision energy intelligence platform for the 2026 Formula 1
-              grid. Real-time MGU-K optimization, MPC battery physics, and
-              overtake decision telemetry.
-            </p>
-            <button
-              onClick={openAuthModal}
-              className="inline-flex items-center gap-2 px-5 py-2.5 font-mono text-xs font-bold tracking-wider text-carbon-base bg-kinetic-cyan rounded-lg hover:shadow-lg hover:shadow-kinetic-cyan/20 transition-all"
-            >
-              GET STARTED
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Links */}
-          <div>
-            <h4 className="font-mono text-[11px] tracking-widest text-slate-400 uppercase mb-4">
-              Platform
-            </h4>
-            <ul className="space-y-2">
-              {['Architecture', 'Telemetry', 'OVS Engine', 'EV Scalability'].map(
-                (link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="font-mono text-xs text-slate-500 hover:text-kinetic-cyan transition-colors"
-                    >
-                      {link}
-                    </a>
-                  </li>
-                )
-              )}
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-mono text-[11px] tracking-widest text-slate-400 uppercase mb-4">
-              Resources
-            </h4>
-            <ul className="space-y-2">
-              {['2026 Regulations', 'Documentation', 'API Reference', 'Status'].map(
-                (link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="font-mono text-xs text-slate-500 hover:text-kinetic-cyan transition-colors"
-                    >
-                      {link}
-                    </a>
-                  </li>
-                )
-              )}
-            </ul>
-          </div>
+    <div
+      ref={footerRef}
+      className="relative z-[20] min-h-[90vh] flex flex-col justify-between p-6 sm:p-10 md:p-14 bg-black text-white border-t border-neutral-900 overflow-hidden"
+    >
+      {/* Top Footer Content */}
+      <div className="w-full max-w-7xl mx-auto footer-top grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-xs sm:text-sm text-neutral-400 mt-6">
+        <div>
+          <p className="font-mono font-bold text-white uppercase tracking-wider text-xs mb-2">
+            // Telemetry Operations
+          </p>
+          <p>pitwall@trackshift.ai</p>
+          <p className="mt-4 font-mono font-bold text-white uppercase tracking-wider text-xs mb-2">
+            // Technical Support
+          </p>
+          <p>support@trackshift.ai</p>
         </div>
 
-        {/* Bottom bar */}
-        <div className="mt-12 pt-6 border-t border-slate-800/50 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <span className="font-mono text-[10px] text-slate-600 tracking-wider">
-            &copy; 2026 APEXSHIFT. FIA REGULATIONS COMPLIANT.
-          </span>
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-[10px] text-slate-600">
-              BUILT WITH REACT + THREE.JS
-            </span>
-            <Github className="w-4 h-4 text-slate-600 hover:text-white transition-colors cursor-pointer" />
-          </div>
+        <div>
+          <p className="font-mono font-bold text-white uppercase tracking-wider text-xs mb-2">
+            // Telemetry Architecture
+          </p>
+          <ul className="space-y-1 font-mono">
+            <li>
+              <a href="#about" className="hover:text-cyan-400 transition-colors">
+                Noise Cancellation
+              </a>
+            </li>
+            <li>
+              <a href="#achievements" className="hover:text-cyan-400 transition-colors">
+                Ecosystem Metrics
+              </a>
+            </li>
+            <li>
+              <a href="#pillars" className="hover:text-cyan-400 transition-colors">
+                Motorsport Pillars
+              </a>
+            </li>
+            <li>
+              <a
+                href="https://github.com/Icey067/TrackShiftPrototype"
+                target="_blank"
+                rel="noreferrer"
+                className="hover:text-cyan-400 transition-colors"
+              >
+                GitHub Repository
+              </a>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <p className="font-mono font-bold text-white uppercase tracking-wider text-xs mb-2">
+            // Regulations & Calibration
+          </p>
+          <p className="leading-relaxed">
+            Silverstone Calibration Standard
+            <br />
+            FIA 2026 ERS & MGU-K Ready
+            <br />
+            Pirelli C1-C5 Tyre Physics
+          </p>
+        </div>
+
+        <div className="flex flex-col items-start gap-3">
+          <p className="font-mono font-bold text-white uppercase tracking-wider text-xs">
+            // Live Pit Wall Access
+          </p>
+          <button
+            onClick={demoLogin}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs tracking-wider uppercase transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+          >
+            <Play className="w-3.5 h-3.5 fill-black" />
+            Launch Demo Pit Wall
+          </button>
+          <button
+            onClick={openAuthModal}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 font-mono text-xs tracking-wider uppercase transition-all"
+          >
+            <Zap className="w-3.5 h-3.5 text-cyan-400" />
+            Engineer Sign In
+          </button>
         </div>
       </div>
-    </footer>
+
+      {/* Giant Footer Staggered Text */}
+      <div className="w-full py-8 mt-12 overflow-hidden select-none">
+        <h2 className="footer-title text-[4rem] sm:text-[7rem] md:text-[11rem] lg:text-[14rem] font-bold font-aboreto text-center text-slate-100 leading-none tracking-tight flex justify-center flex-wrap">
+          {'TRACKSHIFT'.split('').map((ch, idx) => (
+            <span key={idx} className="inline-block overflow-hidden">
+              {ch}
+            </span>
+          ))}
+        </h2>
+        <div className="flex items-center justify-between font-mono text-[10px] text-neutral-500 mt-4 px-4">
+          <span>© 2026 TRACKSHIFT PLATFORM</span>
+          <span>ALL RIGHTS RESERVED // FIA COMPLIANT</span>
+        </div>
+      </div>
+    </div>
   );
 }

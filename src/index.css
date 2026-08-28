@@ -13,6 +13,21 @@
   --color-slate-mid: #334155;
   --color-slate-bright: #94A3B8;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, monospace;
+  --font-aboreto: 'Aboreto', cursive;
+}
+
+.font-aboreto {
+  font-family: var(--font-aboreto);
+}
+
+.hide-scrollbar {
+  overflow: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 @layer utilities {
@@ -135,10 +150,7 @@
   background: #00F5FF;
 }
 
-html {
-  scroll-behavior: smooth;
-}
-
+html,
 body {
   background: #05070B;
   color: #CBD5E1;

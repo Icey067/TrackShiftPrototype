@@ -6,6 +6,8 @@ import {
   CompoundProfile,
   InitialSyncPacket,
   TelemetryUpdatePacket,
+  DashboardTab,
+  TelemetryDataSource,
 } from '../../types';
 import { PitWallHeader } from '../PitWallHeader';
 import { HeroStatsGrid } from '../HeroStatsGrid';
@@ -14,10 +16,24 @@ import { MathDecompositionPanel } from '../MathDecompositionPanel';
 import { PitWallControls } from '../PitWallControls';
 import { TelemetryTable } from '../TelemetryTable';
 import { PythonCodeViewer } from '../PythonCodeViewer';
-import { LogOut, Radio } from 'lucide-react';
+import { ValidationStudio } from '../validation/ValidationStudio';
+import { CrossoverMatrix } from '../strategy/CrossoverMatrix';
+import { TelemetryModeSelector } from '../dataset/TelemetryModeSelector';
+import {
+  LogOut,
+  Radio,
+  BarChart3,
+  GitBranch,
+  Target,
+  Sparkles,
+  Layers,
+} from 'lucide-react';
 
 export function DashboardView() {
   const { username, logout } = useApp();
+  const [activeTab, setActiveTab] = useState<DashboardTab>('pit-wall');
+  const [dataSource, setDataSource] = useState<TelemetryDataSource>('SYNTHETIC_LIVE');
+
   const [history, setHistory] = useState<TelemetryPacket[]>([]);
   const [latestPacket, setLatestPacket] = useState<TelemetryPacket | null>(null);
   const [compounds, setCompounds] = useState<Record<string, CompoundProfile>>({});
@@ -103,84 +119,77 @@ export function DashboardView() {
               if (syncData.current_state.flag_status) setCurrentFlag(syncData.current_state.flag_status);
             }
           } else if (payload.event === 'TELEMETRY_UPDATE') {
-            const updateData = payload as TelemetryUpdatePacket;
-            const newLap = updateData.data;
+            const update = payload as TelemetryUpdatePacket;
+            const newLap = update.data;
             setLatestPacket(newLap);
-            setCurrentGap(newLap.car_telemetry.gap_to_ahead_sec);
-            setCurrentFlag(newLap.car_telemetry.flag_status);
-            setCurrentCompound(newLap.tyre_metrics.compound);
-            setFiltrationEnabled(newLap.filtration_applied);
-            setHistory((prev) => [...prev, newLap].slice(-30));
+            setHistory((prev) => {
+              const existingIdx = prev.findIndex(
+                (p) => p.lap_number === newLap.lap_number && p.stint_lap === newLap.stint_lap
+              );
+              if (existingIdx >= 0) {
+                const next = [...prev];
+                next[existingIdx] = newLap;
+                return next;
+              }
+              return [...prev, newLap].slice(-30);
+            });
+            if (newLap.tyre_metrics?.compound) {
+              setCurrentCompound(newLap.tyre_metrics.compound);
+            }
           }
         } catch {
-          // ignore
+          // malformed WS
         }
-      };
-
-      ws.onclose = () => {
-        setConnectionMode('STREAM');
-        startPollingFallback();
-        reconnectTimeoutRef.current = setTimeout(() => connectWebSocket(), 5000);
       };
 
       ws.onerror = () => {
-        setConnectionMode('STREAM');
-        startPollingFallback();
-        try { ws.close(); } catch { /* ignore */ }
+        setIsConnected(false);
+      };
+
+      ws.onclose = () => {
+        setIsConnected(false);
+        socketRef.current = null;
+        if (!pollingIntervalRef.current) {
+          pollingIntervalRef.current = setInterval(hydrateFromRest, 2000);
+        }
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = setTimeout(() => {
+          setReconnectAttempts((prev) => prev + 1);
+          connectWebSocket();
+        }, 3000);
       };
     } catch {
-      setConnectionMode('STREAM');
-      startPollingFallback();
-      reconnectTimeoutRef.current = setTimeout(() => connectWebSocket(), 5000);
-    }
-  }, []);
-
-  const startPollingFallback = useCallback(() => {
-    if (pollingIntervalRef.current) return;
-    pollingIntervalRef.current = setInterval(async () => {
-      try {
-        const res = await fetch('/api/telemetry/poll');
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.latest) {
-          const newLap = data.latest;
-          setLatestPacket(newLap);
-          setCurrentGap(newLap.car_telemetry.gap_to_ahead_sec);
-          setCurrentFlag(newLap.car_telemetry.flag_status);
-          setCurrentCompound(newLap.tyre_metrics.compound);
-          setFiltrationEnabled(newLap.filtration_applied);
-          setHistory((prev) => {
-            if (prev.length > 0 && prev[prev.length - 1].stint_lap === newLap.stint_lap && prev[prev.length - 1].lap_number === newLap.lap_number) {
-              return prev;
-            }
-            return [...prev, newLap].slice(-30);
-          });
-        }
-        setIsConnected(true);
-      } catch {
-        // Keep retrying
+      setIsConnected(false);
+      if (!pollingIntervalRef.current) {
+        pollingIntervalRef.current = setInterval(hydrateFromRest, 2000);
       }
-    }, 1200);
-  }, []);
+    }
+  }, [hydrateFromRest]);
 
   useEffect(() => {
     hydrateFromRest();
     connectWebSocket();
-    startPollingFallback();
 
     return () => {
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
-      if (pollingIntervalRef.current) clearInterval(pollingIntervalRef.current);
       if (socketRef.current) {
-        try { socketRef.current.close(); } catch { /* ignore */ }
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [hydrateFromRest, connectWebSocket, startPollingFallback]);
+  }, [hydrateFromRest, connectWebSocket]);
 
-  const sendCommand = async (payload: Record<string, unknown>) => {
+  const sendCommand = async (payload: any) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-      try { socketRef.current.send(JSON.stringify(payload)); } catch { /* ignore */ }
+      socketRef.current.send(JSON.stringify(payload));
+      return;
     }
+
     try {
       const res = await fetch('/api/telemetry/action', {
         method: 'POST',
@@ -195,7 +204,9 @@ export function DashboardView() {
           setHistory((prev) => [...prev, newLap].slice(-30));
         }
       }
-    } catch { /* ignore */ }
+    } catch {
+      // ignore
+    }
   };
 
   const handleToggleFiltration = () => {
@@ -233,62 +244,131 @@ export function DashboardView() {
     sendCommand({ action: 'SIMULATE_LAP' });
   };
 
+  const handleSelectSource = (src: TelemetryDataSource) => {
+    setDataSource(src);
+    if (src === 'REAL_WORLD_F1') {
+      setActiveTab('validation');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col font-sans data-grid selection:bg-cyan-500 selection:text-slate-950">
-      {/* Dashboard Top Bar */}
+      {/* Top Cockpit Header */}
       <div className="w-full glass-panel border-b border-slate-800/50 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-5 lg:px-6 flex items-center justify-between h-12">
-          <div className="flex items-center gap-3">
-            <Radio className="w-4 h-4 text-kinetic-cyan" />
-            <span className="font-mono text-xs font-bold tracking-wider text-white">
-              APEXSHIFT <span className="text-slate-500">//</span>{' '}
-              <span className="text-kinetic-cyan">PIT WALL</span>
-            </span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 py-2.5 sm:py-0 sm:h-14">
+          <div className="flex items-center justify-between sm:justify-start gap-4">
+            <div className="flex items-center gap-2.5">
+              <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
+              <span className="font-mono text-xs font-bold tracking-wider text-white">
+                TRACKSHIFT <span className="text-slate-500">//</span>{' '}
+                <span className="text-cyan-400">AI MOTORSPORT INTELLIGENCE</span>
+              </span>
+            </div>
+
+            {/* Telemetry Data Source Switcher */}
+            <div className="hidden md:block">
+              <TelemetryModeSelector
+                currentSource={dataSource}
+                onSelectSource={handleSelectSource}
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="font-mono text-[10px] text-slate-500 tracking-wider hidden sm:block">
-              ENGINEER: <span className="text-kinetic-cyan">{username}</span>
+
+          {/* Tab Navigation Pill Group */}
+          <div className="flex items-center justify-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800">
+            <button
+              onClick={() => setActiveTab('pit-wall')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all ${
+                activeTab === 'pit-wall'
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
+                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>Live Pit-Wall</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('validation')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all ${
+                activeTab === 'validation'
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
+                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
+              }`}
+            >
+              <Target className="w-3.5 h-3.5" />
+              <span>Validation Studio</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('crossover')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all ${
+                activeTab === 'crossover'
+                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
+                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
+              }`}
+            >
+              <GitBranch className="w-3.5 h-3.5" />
+              <span>Crossover Matrix</span>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-end gap-3">
+            <span className="font-mono text-[10px] text-slate-500 tracking-wider hidden lg:block">
+              ENGINEER: <span className="text-cyan-400">{username}</span>
             </span>
             <button
               onClick={logout}
-              className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-[10px] tracking-wider text-slate-400 border border-slate-700 rounded hover:border-fia-red/50 hover:text-fia-red transition-all"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 font-mono text-[10px] tracking-wider text-slate-400 border border-slate-700 rounded hover:border-rose-500/50 hover:text-rose-400 transition-all"
             >
               <LogOut className="w-3 h-3" />
-              DISCONNECT
+              <span className="hidden sm:inline">DISCONNECT</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="w-full max-w-7xl mx-auto p-3 sm:p-5 lg:p-6 flex flex-col gap-5">
-        <PitWallHeader
-          latestPacket={latestPacket}
-          isConnected={isConnected}
-          connectionMode={connectionMode}
-          reconnectAttempts={reconnectAttempts}
-          onOpenCodeModal={() => setIsCodeModalOpen(true)}
-          filtrationEnabled={filtrationEnabled}
-        />
-        <HeroStatsGrid latestPacket={latestPacket} />
-        <AhaTelemetryChart
-          history={history}
-          filtrationEnabled={filtrationEnabled}
-          onToggleFiltration={handleToggleFiltration}
-        />
-        <MathDecompositionPanel latestPacket={latestPacket} />
-        <PitWallControls
-          currentCompound={currentCompound}
-          compounds={compounds}
-          onSelectCompound={handleSelectCompound}
-          onTriggerTraffic={handleTriggerTraffic}
-          onClearTraffic={handleClearTraffic}
-          onSetFlag={handleSetFlag}
-          onResetStint={handleResetStint}
-          onSimulateLap={handleSimulateLap}
-          currentGap={currentGap}
-          currentFlag={currentFlag}
-        />
-        <TelemetryTable history={history} />
+      {/* Main Content Area */}
+      <div className="w-full max-w-7xl mx-auto p-3 sm:p-5 lg:p-6 flex flex-col gap-5 flex-1">
+        {/* TAB 1: LIVE PIT WALL */}
+        {activeTab === 'pit-wall' && (
+          <>
+            <PitWallHeader
+              latestPacket={latestPacket}
+              isConnected={isConnected}
+              connectionMode={connectionMode}
+              reconnectAttempts={reconnectAttempts}
+              onOpenCodeModal={() => setIsCodeModalOpen(true)}
+              filtrationEnabled={filtrationEnabled}
+            />
+            <HeroStatsGrid latestPacket={latestPacket} />
+            <AhaTelemetryChart
+              history={history}
+              filtrationEnabled={filtrationEnabled}
+              onToggleFiltration={handleToggleFiltration}
+            />
+            <MathDecompositionPanel latestPacket={latestPacket} />
+            <PitWallControls
+              currentCompound={currentCompound}
+              compounds={compounds}
+              onSelectCompound={handleSelectCompound}
+              onTriggerTraffic={handleTriggerTraffic}
+              onClearTraffic={handleClearTraffic}
+              onSetFlag={handleSetFlag}
+              onResetStint={handleResetStint}
+              onSimulateLap={handleSimulateLap}
+              currentGap={currentGap}
+              currentFlag={currentFlag}
+            />
+            <TelemetryTable history={history} />
+          </>
+        )}
+
+        {/* TAB 2: POST-RACE VALIDATION STUDIO */}
+        {activeTab === 'validation' && <ValidationStudio />}
+
+        {/* TAB 3: COMPOUND CROSSOVER MATRIX */}
+        {activeTab === 'crossover' && <CrossoverMatrix />}
       </div>
 
       <PythonCodeViewer

@@ -92,3 +92,102 @@ export interface TelemetryUpdatePacket {
   timestamp: number;
   data: TelemetryPacket;
 }
+
+/* =========================================================================
+ * POST-RACE VALIDATION & ACCURACY TYPES
+ * ========================================================================= */
+
+export interface ValidationLapPoint {
+  lap: number;
+  stint_lap: number;
+  actual_lap_time: number;
+  predicted_lap_time: number;
+  raw_unfiltered_lap_time: number;
+  residual_error_s: number; // actual - predicted
+  abs_error_s: number;
+  predicted_deg: number;
+  actual_deg: number;
+  is_cliff_point?: boolean;
+}
+
+export interface ValidationMetricsSummary {
+  mae_seconds: number;
+  rmse_seconds: number;
+  r2_score: number;
+  predicted_cliff_lap: number;
+  actual_cliff_lap: number;
+  cliff_delta_laps: number;
+  max_residual_s: number;
+  sample_size_laps: number;
+  model_grade: 'ELITE' | 'OPTIMAL' | 'ACCEPTABLE' | 'DRIFT_DETECTED';
+}
+
+export interface ValidationStint {
+  id: string;
+  title: string;
+  circuit: string;
+  season: number;
+  grand_prix: string;
+  driver: string;
+  driver_number: number;
+  team: string;
+  compound: CompoundCode;
+  stint_length: number;
+  start_lap: number;
+  end_lap: number;
+  track_temp_c: number;
+  metrics: ValidationMetricsSummary;
+  laps: ValidationLapPoint[];
+}
+
+/* =========================================================================
+ * MULTI-COMPOUND CROSSOVER & STRATEGY TYPES
+ * ========================================================================= */
+
+export interface CompoundCurvePoint {
+  lap: number;
+  SOFT: number;
+  MEDIUM: number;
+  HARD: number;
+  INTERMEDIATE?: number;
+}
+
+export interface CrossoverIntersection {
+  compounds: [CompoundCode, CompoundCode];
+  crossover_lap: number;
+  crossover_pace_s: number;
+  description: string;
+  tactical_advantage: 'UNDERCUT_RECOMMENDED' | 'OVERCUT_FAVORED' | 'NEUTRAL';
+}
+
+export interface UndercutWindowAnalysis {
+  pit_lap: number;
+  delta_advantage_3_laps_s: number;
+  track_position_retention_prob_pct: number;
+  recommended_out_compound: CompoundCode;
+}
+
+export interface CrossoverAnalyticsData {
+  curves: CompoundCurvePoint[];
+  intersections: CrossoverIntersection[];
+  undercut_windows: UndercutWindowAnalysis[];
+  circuit_pit_loss_sec: number;
+}
+
+/* =========================================================================
+ * REAL-WORLD DATASET & DASHBOARD NAVIGATION
+ * ========================================================================= */
+
+export type DashboardTab = 'pit-wall' | 'validation' | 'crossover';
+export type TelemetryDataSource = 'SYNTHETIC_LIVE' | 'REAL_WORLD_F1';
+
+export interface RealWorldSessionInfo {
+  id: string;
+  name: string;
+  year: number;
+  track: string;
+  driver: string;
+  compound: CompoundCode;
+  laps_total: number;
+  condition: string;
+}
