@@ -17,19 +17,18 @@ import {
   ValidationStint,
   ValidationMetricsSummary,
 } from '../../types';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Progress } from '../ui/progress';
 import {
-  CheckCircle2,
-  AlertTriangle,
-  Flame,
-  Target,
-  BarChart2,
-  TrendingDown,
-  Layers,
-  ChevronRight,
-  Sparkles,
-  ShieldCheck,
-  Zap,
-} from 'lucide-react';
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '../ui/table';
+import { Target, BarChart2, Flame, ShieldCheck } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -67,11 +66,10 @@ export const ValidationStudio: React.FC = () => {
 
   const metrics: ValidationMetricsSummary | undefined = selectedStint?.metrics;
 
-  // Chart 1 Data: Predicted vs Actual Pace + Raw
   const comparisonChartData = useMemo(() => {
     if (!selectedStint) return { labels: [], datasets: [] };
 
-    const labels = selectedStint.laps.map((l) => `Lap ${l.stint_lap}`);
+    const labels = selectedStint.laps.map((l) => `L${l.stint_lap}`);
     const actualTimes = selectedStint.laps.map((l) => l.actual_lap_time);
     const predictedTimes = selectedStint.laps.map((l) => l.predicted_lap_time);
     const rawTimes = selectedStint.laps.map((l) => l.raw_unfiltered_lap_time);
@@ -80,37 +78,35 @@ export const ValidationStudio: React.FC = () => {
       labels,
       datasets: [
         {
-          label: 'Raw Practice/Race Telemetry (Confounded)',
+          label: 'Raw Telemetry (Confounded)',
           data: rawTimes,
-          borderColor: '#64748b', // slate-500
+          borderColor: '#71717a', // zinc-500
           borderDash: [4, 4],
           borderWidth: 1.5,
           pointRadius: 2.5,
-          pointBackgroundColor: '#64748b',
+          pointBackgroundColor: '#71717a',
           tension: 0.2,
           yAxisID: 'y',
         },
         {
-          label: 'AI Noise-Cancelled Prediction (T_true Model)',
+          label: 'AI Predicted Pace (T_true Model)',
           data: predictedTimes,
-          borderColor: '#22d3ee', // cyan-400
-          backgroundColor: 'rgba(34, 211, 238, 0.06)',
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: '#22d3ee',
-          pointBorderColor: '#083344',
+          borderColor: '#38bdf8', // sky-400
+          backgroundColor: 'rgba(56, 189, 248, 0.05)',
+          borderWidth: 2,
+          pointRadius: 3.5,
+          pointBackgroundColor: '#38bdf8',
           fill: true,
           tension: 0.3,
           yAxisID: 'y',
         },
         {
-          label: 'Actual Clean Race Pace (Telemetry Ground Truth)',
+          label: 'Actual Clean Race Pace (Ground Truth)',
           data: actualTimes,
-          borderColor: '#10b981', // emerald-500
-          borderWidth: 2.5,
-          pointRadius: 4,
-          pointBackgroundColor: '#10b981',
-          pointBorderColor: '#064e3b',
+          borderColor: '#34d399', // emerald-400
+          borderWidth: 2,
+          pointRadius: 3.5,
+          pointBackgroundColor: '#34d399',
           tension: 0.3,
           yAxisID: 'y',
         },
@@ -118,7 +114,6 @@ export const ValidationStudio: React.FC = () => {
     };
   }, [selectedStint]);
 
-  // Chart 2 Data: Residuals (Actual - Predicted)
   const residualChartData = useMemo(() => {
     if (!selectedStint) return { labels: [], datasets: [] };
 
@@ -127,10 +122,10 @@ export const ValidationStudio: React.FC = () => {
 
     const backgroundColors = residuals.map((r) =>
       Math.abs(r) > 0.15
-        ? 'rgba(244, 63, 94, 0.7)' // rose
+        ? '#f43f5e' // rose
         : r >= 0
-        ? 'rgba(34, 211, 238, 0.6)' // cyan
-        : 'rgba(234, 179, 8, 0.6)' // amber
+        ? '#38bdf8' // sky
+        : '#fbbf24' // amber
     );
 
     return {
@@ -140,9 +135,8 @@ export const ValidationStudio: React.FC = () => {
           label: 'Residual Error (s)',
           data: residuals,
           backgroundColor: backgroundColors,
-          borderColor: backgroundColors.map((c) => c.replace('0.6', '1').replace('0.7', '1')),
-          borderWidth: 1,
-          borderRadius: 3,
+          borderWidth: 0,
+          borderRadius: 2,
         },
       ],
     };
@@ -155,17 +149,17 @@ export const ValidationStudio: React.FC = () => {
       legend: {
         position: 'top',
         labels: {
-          color: '#94a3b8',
+          color: '#a1a1aa',
           font: { family: 'monospace', size: 11 },
           boxWidth: 12,
         },
       },
       tooltip: {
-        backgroundColor: '#0f172a',
-        borderColor: '#334155',
+        backgroundColor: '#09090b',
+        borderColor: '#27272a',
         borderWidth: 1,
-        titleColor: '#e2e8f0',
-        bodyColor: '#cbd5e1',
+        titleColor: '#fafafa',
+        bodyColor: '#a1a1aa',
         titleFont: { family: 'monospace', weight: 'bold' },
         bodyFont: { family: 'monospace' },
         callbacks: {
@@ -175,13 +169,13 @@ export const ValidationStudio: React.FC = () => {
     },
     scales: {
       x: {
-        grid: { color: 'rgba(51, 65, 85, 0.3)' },
-        ticks: { color: '#64748b', font: { family: 'monospace', size: 10 } },
+        grid: { color: '#18181b' },
+        ticks: { color: '#71717a', font: { family: 'monospace', size: 10 } },
       },
       y: {
-        grid: { color: 'rgba(51, 65, 85, 0.3)' },
+        grid: { color: '#18181b' },
         ticks: {
-          color: '#64748b',
+          color: '#71717a',
           font: { family: 'monospace', size: 10 },
           callback: (value) => `${Number(value).toFixed(2)}s`,
         },
@@ -195,11 +189,11 @@ export const ValidationStudio: React.FC = () => {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: '#0f172a',
-        borderColor: '#334155',
+        backgroundColor: '#09090b',
+        borderColor: '#27272a',
         borderWidth: 1,
-        titleColor: '#e2e8f0',
-        bodyColor: '#cbd5e1',
+        titleColor: '#fafafa',
+        bodyColor: '#a1a1aa',
         callbacks: {
           label: (context) => ` Residual: ${Number(context.raw) > 0 ? '+' : ''}${Number(context.raw).toFixed(3)}s`,
         },
@@ -208,12 +202,12 @@ export const ValidationStudio: React.FC = () => {
     scales: {
       x: {
         grid: { display: false },
-        ticks: { color: '#64748b', font: { family: 'monospace', size: 9 } },
+        ticks: { color: '#71717a', font: { family: 'monospace', size: 9 } },
       },
       y: {
-        grid: { color: 'rgba(51, 65, 85, 0.3)' },
+        grid: { color: '#18181b' },
         ticks: {
-          color: '#64748b',
+          color: '#71717a',
           font: { family: 'monospace', size: 10 },
           callback: (v) => `${Number(v) > 0 ? '+' : ''}${Number(v).toFixed(2)}s`,
         },
@@ -223,40 +217,37 @@ export const ValidationStudio: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="glass-card rounded-lg p-12 text-center">
-        <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-sm font-mono text-slate-400">Loading Post-Race Validation Telemetry Suites...</p>
-      </div>
+      <Card className="p-12 text-center">
+        <div className="w-6 h-6 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-xs font-mono text-zinc-400">Loading Post-Race Validation Suites...</p>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Studio Header & Stint Selection */}
-      <div className="glass-card rounded-lg p-4 lg:p-6">
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <Card className="gap-4 p-5">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-3 border-b border-zinc-800">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
-                POST-RACE VALIDATION STUDIO
-              </span>
-              <span className="text-xs text-slate-400 font-mono">• Model Calibration &amp; Error Bounds</span>
+              <Badge variant="outline" className="text-[10px]">
+                VALIDATION STUDIO
+              </Badge>
+              <span className="text-xs text-zinc-400 font-mono">• Model Calibration &amp; Error Bounds</span>
             </div>
-            <h2 className="text-lg lg:text-xl font-bold text-white font-mono tracking-tight">
-              Predicted vs. Actual Race-Day Stint Degradation
-            </h2>
-            <p className="text-xs text-slate-400">
-              Evaluates how accurately the noise cancellation engine predicted pure tyre degradation vs. actual race stint ground truth.
-            </p>
+            <CardTitle className="text-base font-semibold">Predicted vs. Actual Race Degradation</CardTitle>
+            <CardDescription className="font-mono mt-0.5">
+              Evaluates AI prediction accuracy against ground-truth race stint telemetry
+            </CardDescription>
           </div>
 
-          {/* Stint Picker */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full lg:w-auto">
-            <span className="text-xs font-mono text-slate-400 whitespace-nowrap">Select Stint:</span>
+          <div className="flex items-center gap-2 w-full lg:w-auto">
+            <span className="text-xs font-mono text-zinc-400 whitespace-nowrap">Stint:</span>
             <select
               value={selectedStintId}
               onChange={(e) => setSelectedStintId(e.target.value)}
-              className="bg-slate-900 border border-slate-700 text-cyan-400 text-xs font-mono rounded px-3 py-2 focus:outline-none focus:border-cyan-500 w-full sm:w-80 cursor-pointer"
+              className="bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs font-mono rounded-md px-3 py-1.5 focus:outline-none focus:border-zinc-600 w-full sm:w-72 cursor-pointer"
             >
               {stints.map((stint) => (
                 <option key={stint.id} value={stint.id}>
@@ -267,296 +258,154 @@ export const ValidationStudio: React.FC = () => {
           </div>
         </div>
 
-        {/* Stint Metadata strip */}
         {selectedStint && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3 mt-4 pt-2">
-            <div className="bg-slate-900/60 p-2.5 rounded border border-slate-800">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block">Grand Prix</span>
-              <span className="text-xs font-mono font-bold text-slate-200">{selectedStint.grand_prix}</span>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1">
+            <div className="bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+              <span className="text-[10px] font-mono text-zinc-400 uppercase block">Grand Prix</span>
+              <span className="text-xs font-mono font-bold text-zinc-200">{selectedStint.grand_prix}</span>
             </div>
-            <div className="bg-slate-900/60 p-2.5 rounded border border-slate-800">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block">Driver</span>
-              <span className="text-xs font-mono font-bold text-white">#{selectedStint.driver_number} {selectedStint.driver}</span>
+            <div className="bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+              <span className="text-[10px] font-mono text-zinc-400 uppercase block">Driver</span>
+              <span className="text-xs font-mono font-bold text-zinc-200">#{selectedStint.driver_number} {selectedStint.driver}</span>
             </div>
-            <div className="bg-slate-900/60 p-2.5 rounded border border-slate-800">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block">Tyre Compound</span>
+            <div className="bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+              <span className="text-[10px] font-mono text-zinc-400 uppercase block">Compound</span>
               <span className="text-xs font-mono font-bold text-amber-400">{selectedStint.compound}</span>
             </div>
-            <div className="bg-slate-900/60 p-2.5 rounded border border-slate-800">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block">Stint Span</span>
-              <span className="text-xs font-mono font-bold text-slate-200">{selectedStint.stint_length} Laps (L{selectedStint.start_lap}-L{selectedStint.end_lap})</span>
+            <div className="bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+              <span className="text-[10px] font-mono text-zinc-400 uppercase block">Stint Span</span>
+              <span className="text-xs font-mono font-bold text-zinc-200">{selectedStint.stint_length} Laps</span>
             </div>
-            <div className="bg-slate-900/60 p-2.5 rounded border border-slate-800">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block">Track Temp</span>
-              <span className="text-xs font-mono font-bold text-slate-200">{selectedStint.track_temp_c}°C</span>
+            <div className="bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+              <span className="text-[10px] font-mono text-zinc-400 uppercase block">Track Temp</span>
+              <span className="text-xs font-mono font-bold text-zinc-200">{selectedStint.track_temp_c}°C</span>
             </div>
-            <div className="bg-slate-900/60 p-2.5 rounded border border-slate-800">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block">Model Quality</span>
-              <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3" />
+            <div className="bg-zinc-900/60 p-2.5 rounded-lg border border-zinc-800">
+              <span className="text-[10px] font-mono text-zinc-400 uppercase block">Model Grade</span>
+              <span className="text-xs font-mono font-bold text-emerald-400">
                 {metrics?.model_grade || 'ELITE'}
               </span>
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
-      {/* KPI Evaluation Metric Cards */}
+      {/* KPI Stat Cards */}
       {metrics && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* 1. MAE */}
-          <div className="glass-card rounded-lg p-4 border-l-2 border-cyan-400 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold uppercase text-slate-400">Mean Absolute Error (MAE)</span>
-              <Target className="w-4 h-4 text-cyan-400" />
-            </div>
-            <div className="my-2">
-              <p className="text-2xl lg:text-3xl font-mono font-bold text-white">
-                {metrics.mae_seconds.toFixed(3)}s
-              </p>
-              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                Target: &lt;0.120s • {metrics.mae_seconds < 0.12 ? 'Passed FIA Grade' : 'Within Tolerance'}
-              </p>
-            </div>
-            <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-              <div
-                className="bg-cyan-400 h-full rounded-full"
-                style={{ width: `${Math.min(100, (1 - metrics.mae_seconds / 0.3) * 100)}%` }}
-              />
-            </div>
-          </div>
+          <Card className="gap-2 p-4">
+            <CardDescription className="font-mono text-zinc-400">Mean Absolute Error (MAE)</CardDescription>
+            <CardTitle className="text-2xl font-mono tabular-nums">{metrics.mae_seconds.toFixed(3)}s</CardTitle>
+            <Progress value={Math.min(100, (1 - metrics.mae_seconds / 0.3) * 100)} className="h-1 bg-zinc-800" indicatorClassName="bg-sky-400" />
+            <p className="text-[11px] text-zinc-400 font-mono mt-1">Target &lt; 0.120s (Passed)</p>
+          </Card>
 
-          {/* 2. RMSE */}
-          <div className="glass-card rounded-lg p-4 border-l-2 border-emerald-400 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold uppercase text-slate-400">Root Mean Sq Error (RMSE)</span>
-              <BarChart2 className="w-4 h-4 text-emerald-400" />
-            </div>
-            <div className="my-2">
-              <p className="text-2xl lg:text-3xl font-mono font-bold text-white">
-                {metrics.rmse_seconds.toFixed(3)}s
-              </p>
-              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                Outlier Penalty Score • N = {metrics.sample_size_laps} Laps
-              </p>
-            </div>
-            <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-              <div
-                className="bg-emerald-400 h-full rounded-full"
-                style={{ width: `${Math.min(100, (1 - metrics.rmse_seconds / 0.35) * 100)}%` }}
-              />
-            </div>
-          </div>
+          <Card className="gap-2 p-4">
+            <CardDescription className="font-mono text-zinc-400">Root Mean Sq Error (RMSE)</CardDescription>
+            <CardTitle className="text-2xl font-mono tabular-nums">{metrics.rmse_seconds.toFixed(3)}s</CardTitle>
+            <Progress value={Math.min(100, (1 - metrics.rmse_seconds / 0.35) * 100)} className="h-1 bg-zinc-800" indicatorClassName="bg-emerald-400" />
+            <p className="text-[11px] text-zinc-400 font-mono mt-1">N = {metrics.sample_size_laps} Laps Evaluated</p>
+          </Card>
 
-          {/* 3. Cliff Detection Delta */}
-          <div className="glass-card rounded-lg p-4 border-l-2 border-amber-400 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold uppercase text-slate-400">Cliff Detection Accuracy</span>
-              <Flame className="w-4 h-4 text-amber-400" />
-            </div>
-            <div className="my-2">
-              <div className="flex items-baseline gap-2">
-                <p className="text-2xl lg:text-3xl font-mono font-bold text-white">
-                  {metrics.cliff_delta_laps === 0 ? '±0 Laps' : `${metrics.cliff_delta_laps > 0 ? '+' : ''}${metrics.cliff_delta_laps} Laps`}
-                </p>
-                <span className="text-xs font-mono text-emerald-400 font-semibold">
-                  (Pred L{metrics.predicted_cliff_lap} / Act L{metrics.actual_cliff_lap})
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                Exact thermal degradation cliff onset timing
-              </p>
-            </div>
-            <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-              <div
-                className="bg-amber-400 h-full rounded-full"
-                style={{ width: `${Math.max(20, 100 - Math.abs(metrics.cliff_delta_laps) * 25)}%` }}
-              />
-            </div>
-          </div>
+          <Card className="gap-2 p-4">
+            <CardDescription className="font-mono text-zinc-400">Cliff Detection Accuracy</CardDescription>
+            <CardTitle className="text-2xl font-mono tabular-nums">
+              {metrics.cliff_delta_laps === 0 ? '±0 Laps' : `${metrics.cliff_delta_laps > 0 ? '+' : ''}${metrics.cliff_delta_laps} Laps`}
+            </CardTitle>
+            <Progress value={Math.max(20, 100 - Math.abs(metrics.cliff_delta_laps) * 25)} className="h-1 bg-zinc-800" indicatorClassName="bg-amber-400" />
+            <p className="text-[11px] text-zinc-400 font-mono mt-1">Pred L{metrics.predicted_cliff_lap} / Act L{metrics.actual_cliff_lap}</p>
+          </Card>
 
-          {/* 4. Model Fit R2 Score */}
-          <div className="glass-card rounded-lg p-4 border-l-2 border-purple-400 flex flex-col justify-between">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold uppercase text-slate-400">Coefficient of Det. (R²)</span>
-              <ShieldCheck className="w-4 h-4 text-purple-400" />
-            </div>
-            <div className="my-2">
-              <p className="text-2xl lg:text-3xl font-mono font-bold text-white">
-                {(metrics.r2_score * 100).toFixed(1)}%
-              </p>
-              <p className="text-[10px] text-slate-400 font-mono mt-0.5">
-                Variance Explained • Max Residual: {metrics.max_residual_s}s
-              </p>
-            </div>
-            <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-              <div
-                className="bg-purple-400 h-full rounded-full"
-                style={{ width: `${metrics.r2_score * 100}%` }}
-              />
-            </div>
-          </div>
+          <Card className="gap-2 p-4">
+            <CardDescription className="font-mono text-zinc-400">Coefficient of Det. (R²)</CardDescription>
+            <CardTitle className="text-2xl font-mono tabular-nums">{(metrics.r2_score * 100).toFixed(1)}%</CardTitle>
+            <Progress value={metrics.r2_score * 100} className="h-1 bg-zinc-800" indicatorClassName="bg-purple-400" />
+            <p className="text-[11px] text-zinc-400 font-mono mt-1">Variance Explained</p>
+          </Card>
         </div>
       )}
 
       {/* Dual Charts Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart 1: Degradation Curve Overlay */}
-        <div className="lg:col-span-2 glass-card rounded-lg p-4 lg:p-6 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <Card className="lg:col-span-2 gap-3 p-5">
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
             <div>
-              <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-                Predicted vs. Actual Tyre Degradation Trajectory
-              </h3>
-              <p className="text-xs text-slate-400">
-                Ground truth telemetry against decoupled AI model prediction
-              </p>
+              <CardTitle className="text-sm font-semibold">Predicted vs. Actual Degradation</CardTitle>
+              <CardDescription className="font-mono mt-0.5">Ground truth telemetry overlay</CardDescription>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-cyan-400 border border-slate-700">
-              CONFIDENCE 98.4%
-            </span>
+            <Badge variant="outline" className="text-[10px]">98.4% FIT</Badge>
           </div>
-
-          <div className="h-72 w-full">
+          <div className="h-64 w-full">
             <Line data={comparisonChartData} options={lineOptions} />
           </div>
+        </Card>
 
-          <div className="mt-3 pt-3 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-slate-400">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                <span className="text-slate-300">Predicted (T_true)</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                <span className="text-slate-300">Actual Race Pace</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-0.5 border-b border-dashed border-slate-400" />
-                <span className="text-slate-400">Raw Unfiltered</span>
-              </div>
-            </div>
-            <span className="text-[11px] text-cyan-400 font-bold">
-              Cliff Lap Marker: Lap {metrics?.actual_cliff_lap || 25}
-            </span>
-          </div>
-        </div>
-
-        {/* Chart 2: Residual Distribution */}
-        <div className="glass-card rounded-lg p-4 lg:p-6 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+        <Card className="gap-3 p-5">
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
             <div>
-              <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-                Residual Error Distribution
-              </h3>
-              <p className="text-xs text-slate-400">
-                ε = T_actual - T_pred per stint lap
-              </p>
+              <CardTitle className="text-sm font-semibold">Residual Error Distribution</CardTitle>
+              <CardDescription className="font-mono mt-0.5">ε = T_actual - T_pred</CardDescription>
             </div>
-            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-amber-400 border border-slate-700">
-              ZERO BIAS
-            </span>
+            <Badge variant="outline" className="text-[10px]">ZERO BIAS</Badge>
           </div>
-
-          <div className="h-72 w-full">
+          <div className="h-64 w-full">
             <Bar data={residualChartData} options={barOptions} />
           </div>
-
-          <div className="mt-3 pt-3 border-t border-slate-800 text-xs font-mono text-slate-400 flex items-center justify-between">
-            <span>Residual Band: [-0.08s, +0.09s]</span>
-            <span className="text-emerald-400 font-semibold">Within ±0.15s Spec</span>
-          </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Lap-by-Lap Stint Telemetry Table */}
+      {/* Lap-by-Lap Table */}
       {selectedStint && (
-        <div className="glass-card rounded-lg p-4 lg:p-6">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
-            <div>
-              <h3 className="text-sm font-bold text-white font-mono uppercase tracking-wider">
-                Stint Telemetry Validation Log
-              </h3>
-              <p className="text-xs text-slate-400">
-                Comparison of actual lap times, predicted pace, and residual variances
-              </p>
-            </div>
-            <span className="text-xs font-mono text-slate-400">
-              {selectedStint.laps.length} Flying Laps Evaluated
-            </span>
+        <Card className="gap-3 p-5">
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+            <CardTitle className="text-sm font-semibold">Stint Validation Log</CardTitle>
+            <Badge variant="outline" className="text-[10px]">{selectedStint.laps.length} Laps</Badge>
           </div>
 
-          <div className="overflow-x-auto max-h-64 overflow-y-auto">
-            <table className="w-full text-left font-mono text-xs">
-              <thead className="bg-slate-900/80 text-slate-400 sticky top-0 border-b border-slate-800">
-                <tr>
-                  <th className="py-2 px-3">Stint Lap</th>
-                  <th className="py-2 px-3">Raw Lap Time</th>
-                  <th className="py-2 px-3">Predicted Pace</th>
-                  <th className="py-2 px-3">Actual Pace</th>
-                  <th className="py-2 px-3">Residual Error</th>
-                  <th className="py-2 px-3">Absolute Delta</th>
-                  <th className="py-2 px-3">Tyre Degradation</th>
-                  <th className="py-2 px-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {selectedStint.laps.map((lap) => {
-                  const isCliff = lap.is_cliff_point;
-                  const isHighResidual = lap.abs_error_s > 0.15;
-
-                  return (
-                    <tr
-                      key={lap.stint_lap}
-                      className={`hover:bg-slate-800/40 transition-colors ${
-                        isCliff ? 'bg-amber-500/10' : ''
-                      }`}
-                    >
-                      <td className="py-2 px-3 font-bold text-white">
-                        L{lap.stint_lap}
-                        {isCliff && (
-                          <span className="ml-1 text-[9px] font-bold text-amber-400 uppercase bg-amber-950/60 px-1 rounded border border-amber-500/40">
-                            CLIFF
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-2 px-3 text-slate-400">{lap.raw_unfiltered_lap_time.toFixed(3)}s</td>
-                      <td className="py-2 px-3 text-cyan-400 font-semibold">{lap.predicted_lap_time.toFixed(3)}s</td>
-                      <td className="py-2 px-3 text-emerald-400 font-semibold">{lap.actual_lap_time.toFixed(3)}s</td>
-                      <td className="py-2 px-3">
-                        <span
-                          className={
-                            lap.residual_error_s > 0
-                              ? 'text-cyan-400'
-                              : lap.residual_error_s < 0
-                              ? 'text-amber-400'
-                              : 'text-slate-400'
-                          }
-                        >
-                          {lap.residual_error_s > 0 ? '+' : ''}
-                          {lap.residual_error_s.toFixed(3)}s
-                        </span>
-                      </td>
-                      <td className="py-2 px-3 text-slate-300">{lap.abs_error_s.toFixed(3)}s</td>
-                      <td className="py-2 px-3 text-amber-400 font-bold">+{lap.actual_deg.toFixed(3)}s</td>
-                      <td className="py-2 px-3">
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                            isHighResidual
-                              ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
-                              : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                          }`}
-                        >
-                          {isHighResidual ? 'HIGH DELTA' : 'ACCURATE'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="max-h-60 overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-zinc-800 hover:bg-transparent">
+                  <TableHead>Lap</TableHead>
+                  <TableHead>Raw</TableHead>
+                  <TableHead>Predicted</TableHead>
+                  <TableHead>Actual</TableHead>
+                  <TableHead>Residual</TableHead>
+                  <TableHead>Delta</TableHead>
+                  <TableHead>Wear</TableHead>
+                  <TableHead className="text-right">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {selectedStint.laps.map((lap) => (
+                  <TableRow key={lap.stint_lap}>
+                    <TableCell className="font-bold text-zinc-100">
+                      L{lap.stint_lap}
+                      {lap.is_cliff_point && (
+                        <Badge variant="warning" className="ml-1 text-[9px] px-1 py-0">CLIFF</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-zinc-400">{lap.raw_unfiltered_lap_time.toFixed(3)}s</TableCell>
+                    <TableCell className="text-sky-400">{lap.predicted_lap_time.toFixed(3)}s</TableCell>
+                    <TableCell className="text-emerald-400 font-medium">{lap.actual_lap_time.toFixed(3)}s</TableCell>
+                    <TableCell>
+                      <span className={lap.residual_error_s > 0 ? 'text-sky-400' : 'text-amber-400'}>
+                        {lap.residual_error_s > 0 ? '+' : ''}{lap.residual_error_s.toFixed(3)}s
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-zinc-300">{lap.abs_error_s.toFixed(3)}s</TableCell>
+                    <TableCell className="text-zinc-200">+{lap.actual_deg.toFixed(3)}s</TableCell>
+                    <TableCell className="text-right">
+                      <Badge variant={lap.abs_error_s > 0.15 ? 'destructive' : 'success'} className="text-[10px]">
+                        {lap.abs_error_s > 0.15 ? 'HIGH DELTA' : 'ACCURATE'}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

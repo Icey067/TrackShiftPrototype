@@ -19,15 +19,20 @@ import { PythonCodeViewer } from '../PythonCodeViewer';
 import { ValidationStudio } from '../validation/ValidationStudio';
 import { CrossoverMatrix } from '../strategy/CrossoverMatrix';
 import { TelemetryModeSelector } from '../dataset/TelemetryModeSelector';
+import ScrollProvider from '../../hooks/ScrollProvider';
+import { Button } from '../ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import {
   LogOut,
   Radio,
-  BarChart3,
-  GitBranch,
   Target,
-  Sparkles,
-  Layers,
+  GitBranch,
+  ArrowLeft,
 } from 'lucide-react';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+gsap.registerPlugin(ScrollTrigger);
 
 export function DashboardView() {
   const { username, logout } = useApp();
@@ -46,9 +51,70 @@ export function DashboardView() {
   const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState<boolean>(false);
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // GSAP ScrollTrigger Fade In Animations from norrav-landing-page template
+  useEffect(() => {
+    if (!containerRef.current) return;
+
+    const ctx = gsap.context(() => {
+      // Intro animations for top header and stats grid
+      gsap.fromTo(
+        '.dash-header-anim',
+        { y: 20, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.5, ease: 'power3.out' }
+      );
+
+      gsap.fromTo(
+        '.dash-stats-anim',
+        { y: 30, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.6, delay: 0.1, ease: 'power3.out' }
+      );
+
+      // Scroll triggered animations for chart, math panel, controls, and table
+      const scrollSections = [
+        { selector: '.dash-chart-anim', start: 'top 90%' },
+        { selector: '.dash-math-anim', start: 'top 88%' },
+        { selector: '.dash-controls-anim', start: 'top 88%' },
+        { selector: '.dash-table-anim', start: 'top 88%' },
+        { selector: '.dash-validation-anim', start: 'top 90%' },
+        { selector: '.dash-crossover-anim', start: 'top 90%' },
+      ];
+
+      scrollSections.forEach(({ selector, start }) => {
+        const el = containerRef.current?.querySelector(selector);
+        if (el) {
+          gsap.fromTo(
+            el,
+            { y: 35, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              duration: 0.65,
+              ease: 'power3.out',
+              scrollTrigger: {
+                trigger: el,
+                start: start,
+                toggleActions: 'play none none none',
+              },
+            }
+          );
+        }
+      });
+    }, containerRef);
+
+    const refreshTimer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 150);
+
+    return () => {
+      clearTimeout(refreshTimer);
+      ctx.revert();
+    };
+  }, [activeTab]);
 
   const hydrateFromRest = useCallback(async () => {
     try {
@@ -252,129 +318,146 @@ export function DashboardView() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 flex flex-col font-sans data-grid selection:bg-cyan-500 selection:text-slate-950">
-      {/* Top Cockpit Header */}
-      <div className="w-full glass-panel border-b border-slate-800/50 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-5 lg:px-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 py-2.5 sm:py-0 sm:h-14">
-          <div className="flex items-center justify-between sm:justify-start gap-4">
-            <div className="flex items-center gap-2.5">
-              <Radio className="w-4 h-4 text-cyan-400 animate-pulse" />
-              <span className="font-mono text-xs font-bold tracking-wider text-white">
-                TRACKSHIFT <span className="text-slate-500">//</span>{' '}
-                <span className="text-cyan-400">AI MOTORSPORT INTELLIGENCE</span>
+    <ScrollProvider>
+      <div ref={containerRef} className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-zinc-100">
+        {/* Top Navbar */}
+        <header className="sticky top-0 z-40 w-full border-b border-zinc-800 bg-zinc-950/80 backdrop-blur">
+          <div className="max-w-7xl mx-auto flex h-14 items-center justify-between px-4 sm:px-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                className="h-8 gap-1.5 px-2.5 text-xs text-zinc-400 hover:text-zinc-100 font-mono"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Landing</span>
+              </Button>
+
+              <div className="h-4 w-px bg-zinc-800" />
+
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm font-semibold tracking-tight text-zinc-100">
+                  TrackShift <span className="text-zinc-600 font-normal">/</span>{' '}
+                  <span className="text-zinc-400 font-normal">Pit-Wall</span>
+                </span>
+              </div>
+
+              <div className="hidden lg:block">
+                <TelemetryModeSelector
+                  currentSource={dataSource}
+                  onSelectSource={handleSelectSource}
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-xs text-zinc-500 hidden sm:inline">
+                Engineer: <span className="text-zinc-300 font-medium">{username}</span>
               </span>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={logout}
+                className="h-8 text-xs font-mono gap-1.5 border-zinc-800 text-zinc-400 hover:text-rose-400 hover:border-rose-500/40"
+              >
+                <LogOut className="w-3 h-3" />
+                <span className="hidden sm:inline">Disconnect</span>
+              </Button>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
+          {/* Navigation Tabs */}
+          <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as DashboardTab)}>
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+              <TabsList className="bg-zinc-900 border-zinc-800">
+                <TabsTrigger value="pit-wall" className="gap-1.5 font-mono text-xs">
+                  <Radio className="w-3.5 h-3.5" />
+                  <span>Live Pit-Wall</span>
+                </TabsTrigger>
+
+                <TabsTrigger value="validation" className="gap-1.5 font-mono text-xs">
+                  <Target className="w-3.5 h-3.5" />
+                  <span>Validation Studio</span>
+                </TabsTrigger>
+
+                <TabsTrigger value="crossover" className="gap-1.5 font-mono text-xs">
+                  <GitBranch className="w-3.5 h-3.5" />
+                  <span>Crossover Matrix</span>
+                </TabsTrigger>
+              </TabsList>
             </div>
 
-            {/* Telemetry Data Source Switcher */}
-            <div className="hidden md:block">
-              <TelemetryModeSelector
-                currentSource={dataSource}
-                onSelectSource={handleSelectSource}
-              />
-            </div>
-          </div>
+            {/* TAB 1: LIVE PIT WALL */}
+            <TabsContent value="pit-wall" className="flex flex-col gap-5">
+              <div className="dash-header-anim">
+                <PitWallHeader
+                  latestPacket={latestPacket}
+                  isConnected={isConnected}
+                  connectionMode={connectionMode}
+                  reconnectAttempts={reconnectAttempts}
+                  onOpenCodeModal={() => setIsCodeModalOpen(true)}
+                  filtrationEnabled={filtrationEnabled}
+                />
+              </div>
 
-          {/* Tab Navigation Pill Group */}
-          <div className="flex items-center justify-center gap-1 bg-slate-900/90 p-1 rounded-lg border border-slate-800">
-            <button
-              onClick={() => setActiveTab('pit-wall')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all ${
-                activeTab === 'pit-wall'
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
-                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
-              }`}
-            >
-              <Radio className="w-3.5 h-3.5" />
-              <span>Live Pit-Wall</span>
-            </button>
+              <div className="dash-stats-anim">
+                <HeroStatsGrid latestPacket={latestPacket} />
+              </div>
 
-            <button
-              onClick={() => setActiveTab('validation')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all ${
-                activeTab === 'validation'
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
-                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
-              }`}
-            >
-              <Target className="w-3.5 h-3.5" />
-              <span>Validation Studio</span>
-            </button>
+              <div className="dash-chart-anim">
+                <AhaTelemetryChart
+                  history={history}
+                  filtrationEnabled={filtrationEnabled}
+                  onToggleFiltration={handleToggleFiltration}
+                />
+              </div>
 
-            <button
-              onClick={() => setActiveTab('crossover')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-semibold transition-all ${
-                activeTab === 'crossover'
-                  ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-[0_0_10px_rgba(34,211,238,0.2)]'
-                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
-              }`}
-            >
-              <GitBranch className="w-3.5 h-3.5" />
-              <span>Crossover Matrix</span>
-            </button>
-          </div>
+              <div className="dash-math-anim">
+                <MathDecompositionPanel latestPacket={latestPacket} />
+              </div>
 
-          <div className="flex items-center justify-end gap-3">
-            <span className="font-mono text-[10px] text-slate-500 tracking-wider hidden lg:block">
-              ENGINEER: <span className="text-cyan-400">{username}</span>
-            </span>
-            <button
-              onClick={logout}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 font-mono text-[10px] tracking-wider text-slate-400 border border-slate-700 rounded hover:border-rose-500/50 hover:text-rose-400 transition-all"
-            >
-              <LogOut className="w-3 h-3" />
-              <span className="hidden sm:inline">DISCONNECT</span>
-            </button>
-          </div>
-        </div>
+              <div className="dash-controls-anim">
+                <PitWallControls
+                  currentCompound={currentCompound}
+                  compounds={compounds}
+                  onSelectCompound={handleSelectCompound}
+                  onTriggerTraffic={handleTriggerTraffic}
+                  onClearTraffic={handleClearTraffic}
+                  onSetFlag={handleSetFlag}
+                  onResetStint={handleResetStint}
+                  onSimulateLap={handleSimulateLap}
+                  currentGap={currentGap}
+                  currentFlag={currentFlag}
+                />
+              </div>
+
+              <div className="dash-table-anim">
+                <TelemetryTable history={history} />
+              </div>
+            </TabsContent>
+
+            {/* TAB 2: POST-RACE VALIDATION STUDIO */}
+            <TabsContent value="validation" className="dash-validation-anim">
+              <ValidationStudio />
+            </TabsContent>
+
+            {/* TAB 3: COMPOUND CROSSOVER MATRIX */}
+            <TabsContent value="crossover" className="dash-crossover-anim">
+              <CrossoverMatrix />
+            </TabsContent>
+          </Tabs>
+        </main>
+
+        <PythonCodeViewer
+          isOpen={isCodeModalOpen}
+          onClose={() => setIsCodeModalOpen(false)}
+        />
       </div>
-
-      {/* Main Content Area */}
-      <div className="w-full max-w-7xl mx-auto p-3 sm:p-5 lg:p-6 flex flex-col gap-5 flex-1">
-        {/* TAB 1: LIVE PIT WALL */}
-        {activeTab === 'pit-wall' && (
-          <>
-            <PitWallHeader
-              latestPacket={latestPacket}
-              isConnected={isConnected}
-              connectionMode={connectionMode}
-              reconnectAttempts={reconnectAttempts}
-              onOpenCodeModal={() => setIsCodeModalOpen(true)}
-              filtrationEnabled={filtrationEnabled}
-            />
-            <HeroStatsGrid latestPacket={latestPacket} />
-            <AhaTelemetryChart
-              history={history}
-              filtrationEnabled={filtrationEnabled}
-              onToggleFiltration={handleToggleFiltration}
-            />
-            <MathDecompositionPanel latestPacket={latestPacket} />
-            <PitWallControls
-              currentCompound={currentCompound}
-              compounds={compounds}
-              onSelectCompound={handleSelectCompound}
-              onTriggerTraffic={handleTriggerTraffic}
-              onClearTraffic={handleClearTraffic}
-              onSetFlag={handleSetFlag}
-              onResetStint={handleResetStint}
-              onSimulateLap={handleSimulateLap}
-              currentGap={currentGap}
-              currentFlag={currentFlag}
-            />
-            <TelemetryTable history={history} />
-          </>
-        )}
-
-        {/* TAB 2: POST-RACE VALIDATION STUDIO */}
-        {activeTab === 'validation' && <ValidationStudio />}
-
-        {/* TAB 3: COMPOUND CROSSOVER MATRIX */}
-        {activeTab === 'crossover' && <CrossoverMatrix />}
-      </div>
-
-      <PythonCodeViewer
-        isOpen={isCodeModalOpen}
-        onClose={() => setIsCodeModalOpen(false)}
-      />
-    </div>
+    </ScrollProvider>
   );
 }

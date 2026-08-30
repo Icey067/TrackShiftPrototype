@@ -1,135 +1,126 @@
 import React from 'react';
 import { TelemetryPacket } from '../types';
-import { Wind, CheckCircle2 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './ui/card';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from './ui/table';
+import { Badge } from './ui/badge';
 
 interface TelemetryTableProps {
   history: TelemetryPacket[];
 }
 
 export const TelemetryTable: React.FC<TelemetryTableProps> = ({ history }) => {
-  // Show most recent laps in reverse order (newest first)
   const recentLaps = [...history].reverse().slice(0, 10);
 
   return (
-    <div className="glass-card rounded-lg p-4 lg:p-6 w-full relative overflow-hidden">
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+    <Card className="gap-4 p-5">
+      <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
         <div>
-          <h3 className="text-sm lg:text-base font-bold text-white tracking-wide uppercase font-mono">
-            Pit-Wall Live Lap Log &amp; Sector Telemetry
-          </h3>
-          <p className="text-xs text-slate-400">
-            High-frequency microsector splits and true degradation isolation audits
-          </p>
+          <CardTitle className="text-base font-semibold">Live Sector Log &amp; Lap Telemetry</CardTitle>
+          <CardDescription className="font-mono mt-0.5">
+            Microsector timing splits and true degradation audits
+          </CardDescription>
         </div>
 
-        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+        <Badge variant="outline" className="font-mono text-[10px]">
           LATEST {recentLaps.length} LAPS
-        </span>
+        </Badge>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-xs font-mono">
-          <thead>
-            <tr className="border-b border-slate-800 text-[10px] text-slate-500 uppercase tracking-wider bg-slate-900/50">
-              <th className="py-2.5 px-3">Lap</th>
-              <th className="py-2.5 px-2">Tyre</th>
-              <th className="py-2.5 px-3">Raw Time</th>
-              <th className="py-2.5 px-3 text-cyan-400 font-bold">True Isolated</th>
-              <th className="py-2.5 px-2">Δ Offset</th>
-              <th className="py-2.5 px-2">S1</th>
-              <th className="py-2.5 px-2">S2</th>
-              <th className="py-2.5 px-2">S3</th>
-              <th className="py-2.5 px-2">Trap (km/h)</th>
-              <th className="py-2.5 px-3">Condition / Wake</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-800/60">
-            {recentLaps.length === 0 ? (
-              <tr>
-                <td colSpan={10} className="py-6 text-center text-slate-500 font-mono">
-                  Awaiting lap timing packets from race car...
-                </td>
-              </tr>
-            ) : (
-              recentLaps.map((lap, idx) => {
-                const isLatest = idx === 0;
-                const noise = lap.noise_breakdown;
-                const delta = Number((lap.true_isolated_pace - lap.raw_lap_time).toFixed(3));
+      <Table>
+        <TableHeader>
+          <TableRow className="border-zinc-800 hover:bg-transparent">
+            <TableHead className="w-16">Lap</TableHead>
+            <TableHead className="w-16">Tyre</TableHead>
+            <TableHead>Raw Time</TableHead>
+            <TableHead className="text-zinc-100 font-bold">True Isolated</TableHead>
+            <TableHead>Δ Offset</TableHead>
+            <TableHead>S1</TableHead>
+            <TableHead>S2</TableHead>
+            <TableHead>S3</TableHead>
+            <TableHead>Speed (km/h)</TableHead>
+            <TableHead className="text-right">Condition</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {recentLaps.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={10} className="py-8 text-center text-zinc-500 font-mono">
+                Awaiting lap timing packets from race car...
+              </TableCell>
+            </TableRow>
+          ) : (
+            recentLaps.map((lap, idx) => {
+              const isLatest = idx === 0;
+              const noise = lap.noise_breakdown;
+              const delta = Number((lap.true_isolated_pace - lap.raw_lap_time).toFixed(3));
 
-                return (
-                  <tr
-                    key={`${lap.lap_number}-${lap.stint_lap}-${idx}`}
-                    className={`transition-colors hover:bg-slate-800/30 ${
-                      isLatest ? 'bg-cyan-950/20 text-white font-semibold' : 'text-slate-300'
-                    }`}
-                  >
-                    <td className="py-2.5 px-3 font-bold">
-                      <div className="flex items-center gap-1.5">
-                        {isLatest && <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />}
-                        <span>L{lap.stint_lap}</span>
-                        <span className="text-[10px] text-slate-500">({lap.lap_number})</span>
-                      </div>
-                    </td>
+              return (
+                <TableRow
+                  key={`${lap.lap_number}-${lap.stint_lap}-${idx}`}
+                  className={isLatest ? 'bg-zinc-900/60 font-semibold' : ''}
+                >
+                  <TableCell className="font-bold text-zinc-100">
+                    <div className="flex items-center gap-1.5">
+                      {isLatest && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
+                      <span>L{lap.stint_lap}</span>
+                      <span className="text-[10px] text-zinc-500 font-normal">({lap.lap_number})</span>
+                    </div>
+                  </TableCell>
 
-                    <td className="py-2.5 px-2">
-                      <span
-                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border"
-                        style={{
-                          borderColor: `${lap.tyre_metrics.compound_color}55`,
-                          backgroundColor: `${lap.tyre_metrics.compound_color}18`,
-                          color: lap.tyre_metrics.compound_color,
-                        }}
-                      >
-                        {lap.tyre_metrics.compound.slice(0, 3)}
-                      </span>
-                    </td>
+                  <TableCell>
+                    <Badge variant="outline" className="text-[10px] font-mono px-1.5 py-0">
+                      {lap.tyre_metrics.compound.slice(0, 3)}
+                    </Badge>
+                  </TableCell>
 
-                    <td className="py-2.5 px-3 text-slate-400 font-mono">
-                      {formatLapTime(lap.raw_lap_time)}
-                    </td>
+                  <TableCell className="text-zinc-400 font-mono">
+                    {formatLapTime(lap.raw_lap_time)}
+                  </TableCell>
 
-                    <td className="py-2.5 px-3 font-bold font-mono text-cyan-400">
-                      {formatLapTime(lap.true_isolated_pace)}
-                    </td>
+                  <TableCell className="font-bold text-zinc-100 font-mono">
+                    {formatLapTime(lap.true_isolated_pace)}
+                  </TableCell>
 
-                    <td className="py-2.5 px-2 font-mono">
-                      <span className={`text-[11px] font-bold ${delta > 0 ? 'text-amber-400' : 'text-cyan-400'}`}>
-                        {delta > 0 ? `+${delta}` : delta}s
-                      </span>
-                    </td>
+                  <TableCell className="font-mono">
+                    <span className={delta > 0 ? 'text-amber-400' : 'text-emerald-400'}>
+                      {delta > 0 ? `+${delta}` : delta}s
+                    </span>
+                  </TableCell>
 
-                    <td className="py-2.5 px-2 text-slate-400">{lap.sectors.s1.toFixed(3)}</td>
-                    <td className="py-2.5 px-2 text-slate-400">{lap.sectors.s2.toFixed(3)}</td>
-                    <td className="py-2.5 px-2 text-slate-400">{lap.sectors.s3.toFixed(3)}</td>
-                    <td className="py-2.5 px-2 text-purple-400 font-bold">{lap.sectors.speed_trap_kmh}</td>
+                  <TableCell className="text-zinc-400">{lap.sectors.s1.toFixed(3)}</TableCell>
+                  <TableCell className="text-zinc-400">{lap.sectors.s2.toFixed(3)}</TableCell>
+                  <TableCell className="text-zinc-400">{lap.sectors.s3.toFixed(3)}</TableCell>
+                  <TableCell className="text-zinc-300 font-medium">{lap.sectors.speed_trap_kmh}</TableCell>
 
-                    <td className="py-2.5 px-3">
-                      <div className="flex items-center gap-1.5">
-                        {!lap.is_valid_phase ? (
-                          <span className="px-1.5 py-0.5 rounded bg-rose-950/80 text-rose-400 border border-rose-500/40 text-[9px] font-bold">
-                            {lap.rejection_reason}
-                          </span>
-                        ) : noise.in_dirty_air ? (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[9px] font-bold">
-                            <Wind className="w-2.5 h-2.5" />
-                            <span>DIRTY AIR (+{noise.dynamic_wake_penalty_s}s)</span>
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold">
-                            <CheckCircle2 className="w-2.5 h-2.5" />
-                            <span>CLEAN</span>
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+                  <TableCell className="text-right">
+                    {!lap.is_valid_phase ? (
+                      <Badge variant="destructive" className="text-[10px]">
+                        {lap.rejection_reason}
+                      </Badge>
+                    ) : noise.in_dirty_air ? (
+                      <Badge variant="warning" className="text-[10px]">
+                        DIRTY AIR (+{noise.dynamic_wake_penalty_s}s)
+                      </Badge>
+                    ) : (
+                      <Badge variant="success" className="text-[10px]">
+                        CLEAN
+                      </Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })
+          )}
+        </TableBody>
+      </Table>
+    </Card>
   );
 };
 
