@@ -16,7 +16,9 @@ import { CrossoverAnalyticsData } from '../../types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { ArrowRightLeft, Zap, GitBranch } from 'lucide-react';
+import { ArrowRightLeft, Zap, GitBranch, Download } from 'lucide-react';
+import { ExportLogsButton } from '../common/ExportLogsButton';
+import { exportCrossoverLogs } from '../../utils/exportLogs';
 
 ChartJS.register(
   CategoryScale,
@@ -151,23 +153,37 @@ export const CrossoverMatrix: React.FC = () => {
             </CardDescription>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-zinc-900 p-1 rounded-lg border border-zinc-800">
-            <Button
-              variant={selectedStrategy === '1-STOP' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedStrategy('1-STOP')}
-              className="h-7 text-xs font-mono"
-            >
-              1-Stop (M-H)
-            </Button>
-            <Button
-              variant={selectedStrategy === '2-STOP' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setSelectedStrategy('2-STOP')}
-              className="h-7 text-xs font-mono"
-            >
-              2-Stop (S-M-H)
-            </Button>
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1.5 bg-zinc-900 p-1 rounded-lg border border-zinc-800">
+              <Button
+                variant={selectedStrategy === '1-STOP' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedStrategy('1-STOP')}
+                className="h-7 text-xs font-mono"
+              >
+                1-Stop (M-H)
+              </Button>
+              <Button
+                variant={selectedStrategy === '2-STOP' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setSelectedStrategy('2-STOP')}
+                className="h-7 text-xs font-mono"
+              >
+                2-Stop (S-M-H)
+              </Button>
+            </div>
+
+            <ExportLogsButton
+              label="Export Strategy Logs"
+              countLabel={`${data.curves.length} Laps`}
+              onExport={(format) =>
+                exportCrossoverLogs(
+                  data,
+                  format,
+                  'trackshift-crossover-matrix'
+                )
+              }
+            />
           </div>
         </div>
 

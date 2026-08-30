@@ -4,7 +4,6 @@ import {
   Activity,
   Radio,
   Zap,
-  Shield,
   Menu,
   X,
 } from 'lucide-react';
@@ -69,14 +68,14 @@ export function Navbar() {
           </div>
 
           {/* Auth CTA */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={openAuthModal}
-              className="group relative px-5 py-2 font-mono text-xs font-bold tracking-wider text-carbon-base bg-kinetic-cyan rounded transition-all duration-300 hover:bg-white hover:shadow-lg hover:shadow-kinetic-cyan/25"
+              className="group relative px-4 sm:px-5 py-2 font-mono text-xs font-bold tracking-wider text-carbon-base bg-kinetic-cyan rounded-lg transition-all duration-300 hover:bg-white hover:shadow-lg hover:shadow-kinetic-cyan/25"
             >
-              <span className="relative z-10 flex items-center gap-2">
+              <span className="relative z-10 flex items-center gap-1.5 sm:gap-2">
                 <Radio className="w-3.5 h-3.5" />
-                ENTER PIT WALL
+                SIGN IN
               </span>
               <div className="absolute inset-0 rounded bg-kinetic-cyan blur-md opacity-40 group-hover:opacity-60 transition-opacity" />
             </button>
@@ -84,7 +83,7 @@ export function Navbar() {
             {/* Mobile menu toggle */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden text-slate-400 hover:text-white transition-colors"
+              className="md:hidden text-slate-400 hover:text-white transition-colors p-1"
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -93,7 +92,17 @@ export function Navbar() {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className="md:hidden pb-4 border-t border-slate-800/50 mt-2 pt-3">
+          <div className="md:hidden pb-4 border-t border-slate-800/50 mt-2 pt-3 space-y-2">
+            <button
+              onClick={() => {
+                setMobileOpen(false);
+                openAuthModal();
+              }}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 font-mono text-xs text-black bg-cyan-400 font-bold tracking-wider uppercase rounded-lg"
+            >
+              <Radio className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </button>
             {['Architecture', '2026 Regulations', 'Dual-Mode EV', 'Live Telemetry'].map(
               (label) => (
                 <a

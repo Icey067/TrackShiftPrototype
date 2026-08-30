@@ -200,10 +200,10 @@ export default function Hero() {
 
         <button
           onClick={openAuthModal}
-          className="px-7 py-3 font-mono text-xs font-bold tracking-widest text-slate-300 hover:text-white border border-neutral-700 hover:border-cyan-500/60 rounded-xl bg-neutral-900/60 hover:bg-neutral-900 transition-all duration-300 flex items-center gap-2 uppercase backdrop-blur-md"
+          className="px-7 py-3 font-mono text-xs font-bold tracking-widest text-slate-200 hover:text-white border border-neutral-700 hover:border-cyan-400/80 rounded-xl bg-neutral-900/80 hover:bg-neutral-800 transition-all duration-300 flex items-center gap-2 uppercase backdrop-blur-md"
         >
           <Zap className="w-3.5 h-3.5 text-cyan-400" />
-          <span>ENGINEER AUTH</span>
+          <span>SIGN IN</span>
         </button>
       </div>
 

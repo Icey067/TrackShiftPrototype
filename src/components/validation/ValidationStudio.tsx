@@ -28,7 +28,9 @@ import {
   TableRow,
   TableCell,
 } from '../ui/table';
-import { Target, BarChart2, Flame, ShieldCheck } from 'lucide-react';
+import { Target, BarChart2, Flame, ShieldCheck, Download } from 'lucide-react';
+import { ExportLogsButton } from '../common/ExportLogsButton';
+import { exportValidationLogs } from '../../utils/exportLogs';
 
 ChartJS.register(
   CategoryScale,
@@ -242,19 +244,34 @@ export const ValidationStudio: React.FC = () => {
             </CardDescription>
           </div>
 
-          <div className="flex items-center gap-2 w-full lg:w-auto">
-            <span className="text-xs font-mono text-zinc-400 whitespace-nowrap">Stint:</span>
-            <select
-              value={selectedStintId}
-              onChange={(e) => setSelectedStintId(e.target.value)}
-              className="bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs font-mono rounded-md px-3 py-1.5 focus:outline-none focus:border-zinc-600 w-full sm:w-72 cursor-pointer"
-            >
-              {stints.map((stint) => (
-                <option key={stint.id} value={stint.id}>
-                  {stint.title}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-wrap items-center gap-2.5 w-full lg:w-auto">
+            <div className="flex items-center gap-2 flex-1 sm:flex-initial">
+              <span className="text-xs font-mono text-zinc-400 whitespace-nowrap">Stint:</span>
+              <select
+                value={selectedStintId}
+                onChange={(e) => setSelectedStintId(e.target.value)}
+                className="bg-zinc-900 border border-zinc-800 text-zinc-200 text-xs font-mono rounded-md px-3 py-1.5 focus:outline-none focus:border-zinc-600 w-full sm:w-64 cursor-pointer"
+              >
+                {stints.map((stint) => (
+                  <option key={stint.id} value={stint.id}>
+                    {stint.title}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <ExportLogsButton
+              label="Export Validation Logs"
+              countLabel={`${selectedStint?.laps.length || 0} Laps`}
+              onExport={(format) =>
+                exportValidationLogs(
+                  stints,
+                  selectedStintId,
+                  format,
+                  `trackshift-validation-${selectedStint?.driver || 'benchmark'}`
+                )
+              }
+            />
           </div>
         </div>
 

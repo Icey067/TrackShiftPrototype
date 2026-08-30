@@ -3,6 +3,7 @@ import { Play, Pause, FastForward, RotateCcw, Radio, Disc } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { PlaybackState } from '../../types';
+import { ExportLogsButton } from '../common/ExportLogsButton';
 
 interface PlaybackControllerProps {
   playbackState?: PlaybackState;
@@ -12,6 +13,8 @@ interface PlaybackControllerProps {
   onSeek: (lapIndex: number) => void;
   onResetSynthetic: () => void;
   currentLapNumber: number;
+  onExportLogs?: (format: 'csv' | 'json') => void;
+  historyLength?: number;
 }
 
 export const PlaybackController: React.FC<PlaybackControllerProps> = ({
@@ -22,6 +25,8 @@ export const PlaybackController: React.FC<PlaybackControllerProps> = ({
   onSeek,
   onResetSynthetic,
   currentLapNumber,
+  onExportLogs,
+  historyLength,
 }) => {
   const isReplay = playbackState?.mode === 'REPLAY';
   const isPlaying = playbackState?.is_playing ?? true;
@@ -86,6 +91,15 @@ export const PlaybackController: React.FC<PlaybackControllerProps> = ({
               {currentLapIdx} / {totalLaps}
             </span>
           </div>
+        )}
+
+        {/* Export Logs shortcut */}
+        {onExportLogs && (
+          <ExportLogsButton
+            label="Export Logs"
+            countLabel={historyLength !== undefined ? `${historyLength} Laps` : undefined}
+            onExport={onExportLogs}
+          />
         )}
 
         {/* Return to Live Simulator */}

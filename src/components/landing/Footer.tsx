@@ -113,23 +113,23 @@ export default function Footer() {
           </p>
         </div>
 
-        <div className="flex flex-col items-start gap-3">
+        <div className="flex flex-col items-start gap-2.5">
           <p className="font-mono font-bold text-white uppercase tracking-wider text-xs">
             // Live Pit Wall Access
           </p>
           <button
             onClick={demoLogin}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs tracking-wider uppercase transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)]"
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs tracking-wider uppercase transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)]"
           >
             <Play className="w-3.5 h-3.5 fill-black" />
             Launch Demo Pit Wall
           </button>
           <button
             onClick={openAuthModal}
-            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 text-neutral-300 font-mono text-xs tracking-wider uppercase transition-all"
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-700 hover:border-cyan-400 text-neutral-200 font-mono text-xs tracking-wider uppercase transition-all"
           >
             <Zap className="w-3.5 h-3.5 text-cyan-400" />
-            Engineer Sign In
+            <span>Sign In</span>
           </button>
         </div>
       </div>
@@ -138,15 +138,20 @@ export default function Footer() {
       <div className="w-full py-8 mt-12 overflow-hidden select-none">
         <h2 className="footer-title text-[4rem] sm:text-[7rem] md:text-[11rem] lg:text-[14rem] font-bold font-aboreto text-center text-slate-100 leading-none tracking-tight flex justify-center flex-wrap">
           {'TRACKSHIFT'.split('').map((ch, idx) => (
-            <span key={idx} className="inline-block overflow-hidden">
+            <span
+              key={idx}
+              className="inline-block transform will-change-transform text-slate-100"
+            >
               {ch}
             </span>
           ))}
         </h2>
-        <div className="flex items-center justify-between font-mono text-[10px] text-neutral-500 mt-4 px-4">
-          <span>© 2026 TRACKSHIFT PLATFORM</span>
-          <span>ALL RIGHTS RESERVED // FIA COMPLIANT</span>
-        </div>
+      </div>
+
+      {/* Bottom Legal bar */}
+      <div className="w-full max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-[11px] font-mono text-neutral-600 border-t border-neutral-900 pt-4">
+        <span>© 2026 APEXSHIFT / TRACKSHIFT TELEMETRY SYSTEMS.</span>
+        <span>ENGINEER PROTOCOL v2.4 // FORMULA 1 HISTORIC & LIVE INTELLIGENCE</span>
       </div>
     </div>
   );

@@ -14,7 +14,6 @@ import {
 import { PitWallHeader } from '../PitWallHeader';
 import { HeroStatsGrid } from '../HeroStatsGrid';
 import { AhaTelemetryChart } from '../AhaTelemetryChart';
-import { MathDecompositionPanel } from '../MathDecompositionPanel';
 import { PitWallDebriefCard } from '../PitWallDebriefCard';
 import { PitWallControls } from '../PitWallControls';
 import { TelemetryTable } from '../TelemetryTable';
@@ -24,6 +23,12 @@ import { TelemetryModeSelector } from '../dataset/TelemetryModeSelector';
 import { FastF1SelectorModal } from '../dataset/FastF1SelectorModal';
 import { FileUploadModal } from '../dataset/FileUploadModal';
 import { PlaybackController } from './PlaybackController';
+import { ExportLogsButton } from '../common/ExportLogsButton';
+import {
+  exportLivePitWallLogs,
+  exportValidationLogs,
+  exportCrossoverLogs,
+} from '../../utils/exportLogs';
 import ScrollProvider from '../../hooks/ScrollProvider';
 import { Button } from '../ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
@@ -42,7 +47,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 export function DashboardView() {
-  const { username, logout } = useApp();
+  const { username, userEmail, isDemoMode, logout } = useApp();
   const [activeTab, setActiveTab] = useState<DashboardTab>('pit-wall');
   const [dataSource, setDataSource] = useState<TelemetryDataSource>('SYNTHETIC_LIVE');
 
@@ -83,10 +88,9 @@ export function DashboardView() {
         { y: 0, opacity: 1, duration: 0.6, delay: 0.1, ease: 'power3.out' }
       );
 
-      // Scroll triggered animations for chart, math panel, controls, and table
+      // Scroll triggered animations for chart, debrief, controls, and table
       const scrollSections = [
         { selector: '.dash-chart-anim', start: 'top 90%' },
-        { selector: '.dash-math-anim', start: 'top 88%' },
         { selector: '.dash-debrief-anim', start: 'top 88%' },
         { selector: '.dash-controls-anim', start: 'top 88%' },
         { selector: '.dash-table-anim', start: 'top 88%' },
@@ -401,6 +405,32 @@ export function DashboardView() {
     });
   };
 
+  const handleTopExportLogs = async (format: 'csv' | 'json') => {
+    if (activeTab === 'pit-wall') {
+      exportLivePitWallLogs(history, format, 'trackshift-pitwall-session');
+    } else if (activeTab === 'validation') {
+      try {
+        const res = await fetch('/api/validation/stints');
+        const data = await res.json();
+        if (data.stints) {
+          exportValidationLogs(data.stints, undefined, format, 'trackshift-validation-benchmark');
+        }
+      } catch (err) {
+        console.error('Failed to export validation logs:', err);
+      }
+    } else if (activeTab === 'crossover') {
+      try {
+        const res = await fetch('/api/analytics/crossover');
+        const data = await res.json();
+        if (data) {
+          exportCrossoverLogs(data, format, 'trackshift-crossover-matrix');
+        }
+      } catch (err) {
+        console.error('Failed to export crossover logs:', err);
+      }
+    }
+  };
+
   return (
     <ScrollProvider>
       <div ref={containerRef} className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-zinc-100">
@@ -438,9 +468,17 @@ export function DashboardView() {
             </div>
 
             <div className="flex items-center gap-3">
-              <span className="font-mono text-xs text-zinc-500 hidden sm:inline">
-                Engineer: <span className="text-zinc-300 font-medium">{username}</span>
-              </span>
+              <div className="hidden sm:flex flex-col items-end leading-tight font-mono text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-zinc-400 font-medium">{username}</span>
+                  {isDemoMode && (
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                      GUEST
+                    </span>
+                  )}
+                </div>
+                {userEmail && <span className="text-[10px] text-zinc-500">{userEmail}</span>}
+              </div>
 
               <Button
                 variant="outline"
@@ -449,7 +487,7 @@ export function DashboardView() {
                 className="h-8 text-xs font-mono gap-1.5 border-zinc-800 text-zinc-400 hover:text-rose-400 hover:border-rose-500/40"
               >
                 <LogOut className="w-3 h-3" />
-                <span className="hidden sm:inline">Disconnect</span>
+                <span className="hidden sm:inline">Sign Out</span>
               </Button>
             </div>
           </div>
@@ -477,7 +515,7 @@ export function DashboardView() {
                 </TabsTrigger>
               </TabsList>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -497,6 +535,18 @@ export function DashboardView() {
                   <UploadCloud className="w-3.5 h-3.5 text-amber-400" />
                   <span>Upload Sheet</span>
                 </Button>
+
+                <ExportLogsButton
+                  label="Export Logs"
+                  countLabel={
+                    activeTab === 'pit-wall'
+                      ? `${history.length} Laps`
+                      : activeTab === 'validation'
+                      ? 'Benchmark'
+                      : 'Matrix'
+                  }
+                  onExport={handleTopExportLogs}
+                />
               </div>
             </div>
 
@@ -511,6 +561,10 @@ export function DashboardView() {
                 onSeek={handleSeek}
                 onResetSynthetic={handleResetSynthetic}
                 currentLapNumber={latestPacket?.lap_number || 1}
+                onExportLogs={(format) =>
+                  exportLivePitWallLogs(history, format, 'trackshift-live-pitwall-telemetry')
+                }
+                historyLength={history.length}
               />
 
               <div className="dash-header-anim">
@@ -533,10 +587,6 @@ export function DashboardView() {
                   filtrationEnabled={filtrationEnabled}
                   onToggleFiltration={handleToggleFiltration}
                 />
-              </div>
-
-              <div className="dash-math-anim">
-                <MathDecompositionPanel latestPacket={latestPacket} />
               </div>
 
               <div className="dash-debrief-anim">

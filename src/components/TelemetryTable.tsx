@@ -10,6 +10,8 @@ import {
   TableCell,
 } from './ui/table';
 import { Badge } from './ui/badge';
+import { ExportLogsButton } from './common/ExportLogsButton';
+import { exportLivePitWallLogs } from '../utils/exportLogs';
 
 interface TelemetryTableProps {
   history: TelemetryPacket[];
@@ -20,7 +22,7 @@ export const TelemetryTable: React.FC<TelemetryTableProps> = ({ history }) => {
 
   return (
     <Card className="gap-4 p-5">
-      <div className="flex items-center justify-between pb-3 border-b border-zinc-800">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-zinc-800">
         <div>
           <CardTitle className="text-base font-semibold">Live Sector Log &amp; Lap Telemetry</CardTitle>
           <CardDescription className="font-mono mt-0.5">
@@ -28,9 +30,20 @@ export const TelemetryTable: React.FC<TelemetryTableProps> = ({ history }) => {
           </CardDescription>
         </div>
 
-        <Badge variant="outline" className="font-mono text-[10px]">
-          LATEST {recentLaps.length} LAPS
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="font-mono text-[10px]">
+            TOTAL {history.length} LAPS
+          </Badge>
+
+          <ExportLogsButton
+            label="Export Telemetry Logs"
+            countLabel={`${history.length} Laps`}
+            disabled={history.length === 0}
+            onExport={(format) =>
+              exportLivePitWallLogs(history, format, 'trackshift-live-pitwall-telemetry')
+            }
+          />
+        </div>
       </div>
 
       <Table>
