@@ -8,17 +8,22 @@ import {
   TelemetryUpdatePacket,
   DashboardTab,
   TelemetryDataSource,
+  IngestedSessionData,
+  PlaybackState,
 } from '../../types';
 import { PitWallHeader } from '../PitWallHeader';
 import { HeroStatsGrid } from '../HeroStatsGrid';
 import { AhaTelemetryChart } from '../AhaTelemetryChart';
 import { MathDecompositionPanel } from '../MathDecompositionPanel';
+import { PitWallDebriefCard } from '../PitWallDebriefCard';
 import { PitWallControls } from '../PitWallControls';
 import { TelemetryTable } from '../TelemetryTable';
-import { PythonCodeViewer } from '../PythonCodeViewer';
 import { ValidationStudio } from '../validation/ValidationStudio';
 import { CrossoverMatrix } from '../strategy/CrossoverMatrix';
 import { TelemetryModeSelector } from '../dataset/TelemetryModeSelector';
+import { FastF1SelectorModal } from '../dataset/FastF1SelectorModal';
+import { FileUploadModal } from '../dataset/FileUploadModal';
+import { PlaybackController } from './PlaybackController';
 import ScrollProvider from '../../hooks/ScrollProvider';
 import { Button } from '../ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
@@ -28,6 +33,8 @@ import {
   Target,
   GitBranch,
   ArrowLeft,
+  CloudDownload,
+  UploadCloud,
 } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -49,14 +56,16 @@ export function DashboardView() {
   const [isConnected, setIsConnected] = useState<boolean>(true);
   const [connectionMode, setConnectionMode] = useState<'WS' | 'STREAM'>('STREAM');
   const [reconnectAttempts, setReconnectAttempts] = useState<number>(0);
-  const [isCodeModalOpen, setIsCodeModalOpen] = useState<boolean>(false);
+  const [isFastF1ModalOpen, setIsFastF1ModalOpen] = useState<boolean>(false);
+  const [isFileUploadModalOpen, setIsFileUploadModalOpen] = useState<boolean>(false);
+  const [playbackState, setPlaybackState] = useState<PlaybackState | undefined>(undefined);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // GSAP ScrollTrigger Fade In Animations from norrav-landing-page template
+  // GSAP ScrollTrigger Fade In Animations
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -78,6 +87,7 @@ export function DashboardView() {
       const scrollSections = [
         { selector: '.dash-chart-anim', start: 'top 90%' },
         { selector: '.dash-math-anim', start: 'top 88%' },
+        { selector: '.dash-debrief-anim', start: 'top 88%' },
         { selector: '.dash-controls-anim', start: 'top 88%' },
         { selector: '.dash-table-anim', start: 'top 88%' },
         { selector: '.dash-validation-anim', start: 'top 90%' },
@@ -131,6 +141,7 @@ export function DashboardView() {
           setCurrentGap(data.current_state.gap_to_ahead);
         }
         if (data.current_state.flag_status) setCurrentFlag(data.current_state.flag_status);
+        if (data.current_state.playback) setPlaybackState(data.current_state.playback);
       }
       if (data.history_sample && data.history_sample.length > 0) {
         setHistory(data.history_sample);
@@ -183,11 +194,15 @@ export function DashboardView() {
                 setCurrentGap(syncData.current_state.gap_to_ahead);
               }
               if (syncData.current_state.flag_status) setCurrentFlag(syncData.current_state.flag_status);
+              if (syncData.current_state.playback) setPlaybackState(syncData.current_state.playback);
             }
           } else if (payload.event === 'TELEMETRY_UPDATE') {
             const update = payload as TelemetryUpdatePacket;
             const newLap = update.data;
             setLatestPacket(newLap);
+            if (newLap.playback) {
+              setPlaybackState(newLap.playback);
+            }
             setHistory((prev) => {
               const existingIdx = prev.findIndex(
                 (p) => p.lap_number === newLap.lap_number && p.stint_lap === newLap.stint_lap
@@ -317,6 +332,75 @@ export function DashboardView() {
     }
   };
 
+  // Replay & Ingestion Handlers
+  const handleSelectForReplay = async (session: IngestedSessionData) => {
+    try {
+      await fetch('/api/telemetry/load-replay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          laps: session.laps,
+          title: session.title,
+          driver: session.driver,
+          compound: session.compound,
+        }),
+      });
+      setHistory([]);
+      setCurrentCompound(session.compound || 'MEDIUM');
+      setActiveTab('pit-wall');
+      setDataSource('FASTF1_SESSION');
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleSelectForBatchAnalysis = async (session: IngestedSessionData) => {
+    try {
+      const res = await fetch('/api/telemetry/analyze-batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          laps: session.laps,
+          compound: session.compound || 'MEDIUM',
+        }),
+      });
+      if (res.ok) {
+        setActiveTab('validation');
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handlePlay = () => {
+    sendCommand({ action: 'PLAY' });
+    setPlaybackState((prev) => prev ? { ...prev, is_playing: true } : undefined);
+  };
+
+  const handlePause = () => {
+    sendCommand({ action: 'PAUSE' });
+    setPlaybackState((prev) => prev ? { ...prev, is_playing: false } : undefined);
+  };
+
+  const handleSetSpeed = (speed: number) => {
+    sendCommand({ action: 'SET_SPEED', speed });
+    setPlaybackState((prev) => prev ? { ...prev, speed } : undefined);
+  };
+
+  const handleSeek = (lapIndex: number) => {
+    sendCommand({ action: 'SEEK', lap_index: lapIndex });
+  };
+
+  const handleResetSynthetic = () => {
+    sendCommand({ action: 'RESET_STINT' });
+    setDataSource('SYNTHETIC_LIVE');
+    fetch('/api/telemetry/playback-control', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'RESET_SYNTHETIC' }),
+    });
+  };
+
   return (
     <ScrollProvider>
       <div ref={containerRef} className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col font-sans selection:bg-zinc-800 selection:text-zinc-100">
@@ -347,6 +431,8 @@ export function DashboardView() {
                 <TelemetryModeSelector
                   currentSource={dataSource}
                   onSelectSource={handleSelectSource}
+                  onOpenFastF1Modal={() => setIsFastF1ModalOpen(true)}
+                  onOpenFileUploadModal={() => setIsFileUploadModalOpen(true)}
                 />
               </div>
             </div>
@@ -373,7 +459,7 @@ export function DashboardView() {
         <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-6">
           {/* Navigation Tabs */}
           <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as DashboardTab)}>
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-zinc-800 pb-3 gap-3">
               <TabsList className="bg-zinc-900 border-zinc-800">
                 <TabsTrigger value="pit-wall" className="gap-1.5 font-mono text-xs">
                   <Radio className="w-3.5 h-3.5" />
@@ -390,17 +476,49 @@ export function DashboardView() {
                   <span>Crossover Matrix</span>
                 </TabsTrigger>
               </TabsList>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsFastF1ModalOpen(true)}
+                  className="h-7 text-xs font-mono gap-1.5 border-zinc-800 text-zinc-300 hover:text-zinc-100"
+                >
+                  <CloudDownload className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Fetch F1 Session</span>
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsFileUploadModalOpen(true)}
+                  className="h-7 text-xs font-mono gap-1.5 border-zinc-800 text-zinc-300 hover:text-zinc-100"
+                >
+                  <UploadCloud className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Upload Sheet</span>
+                </Button>
+              </div>
             </div>
 
             {/* TAB 1: LIVE PIT WALL */}
             <TabsContent value="pit-wall" className="flex flex-col gap-5">
+              {/* Playback Controller Bar */}
+              <PlaybackController
+                playbackState={playbackState}
+                onPlay={handlePlay}
+                onPause={handlePause}
+                onSetSpeed={handleSetSpeed}
+                onSeek={handleSeek}
+                onResetSynthetic={handleResetSynthetic}
+                currentLapNumber={latestPacket?.lap_number || 1}
+              />
+
               <div className="dash-header-anim">
                 <PitWallHeader
                   latestPacket={latestPacket}
                   isConnected={isConnected}
                   connectionMode={connectionMode}
                   reconnectAttempts={reconnectAttempts}
-                  onOpenCodeModal={() => setIsCodeModalOpen(true)}
                   filtrationEnabled={filtrationEnabled}
                 />
               </div>
@@ -419,6 +537,14 @@ export function DashboardView() {
 
               <div className="dash-math-anim">
                 <MathDecompositionPanel latestPacket={latestPacket} />
+              </div>
+
+              <div className="dash-debrief-anim">
+                <PitWallDebriefCard
+                  latestPacket={latestPacket}
+                  currentCompound={currentCompound}
+                  currentGap={currentGap}
+                />
               </div>
 
               <div className="dash-controls-anim">
@@ -453,9 +579,18 @@ export function DashboardView() {
           </Tabs>
         </main>
 
-        <PythonCodeViewer
-          isOpen={isCodeModalOpen}
-          onClose={() => setIsCodeModalOpen(false)}
+        <FastF1SelectorModal
+          isOpen={isFastF1ModalOpen}
+          onClose={() => setIsFastF1ModalOpen(false)}
+          onSelectForReplay={handleSelectForReplay}
+          onSelectForBatchAnalysis={handleSelectForBatchAnalysis}
+        />
+
+        <FileUploadModal
+          isOpen={isFileUploadModalOpen}
+          onClose={() => setIsFileUploadModalOpen(false)}
+          onSelectForReplay={handleSelectForReplay}
+          onSelectForBatchAnalysis={handleSelectForBatchAnalysis}
         />
       </div>
     </ScrollProvider>

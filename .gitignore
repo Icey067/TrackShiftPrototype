@@ -7,3 +7,7 @@ coverage/
 .env*
 !.env.example
 norrav-landing-page/
+__pycache__/
+*.pyc
+fastf1_cache/
+

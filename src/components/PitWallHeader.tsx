@@ -1,15 +1,12 @@
 import React from 'react';
-import { Wifi, WifiOff, Activity, Clock, Flame, ShieldAlert, Cpu } from 'lucide-react';
 import { TelemetryPacket } from '../types';
 import { Badge } from './ui/badge';
-import { Button } from './ui/button';
 
 interface PitWallHeaderProps {
   latestPacket: TelemetryPacket | null;
   isConnected: boolean;
   connectionMode?: 'WS' | 'STREAM';
   reconnectAttempts: number;
-  onOpenCodeModal: () => void;
   filtrationEnabled: boolean;
 }
 
@@ -18,7 +15,6 @@ export const PitWallHeader: React.FC<PitWallHeaderProps> = ({
   isConnected,
   connectionMode = 'WS',
   reconnectAttempts,
-  onOpenCodeModal,
 }) => {
   const telemetry = latestPacket?.car_telemetry;
   const flag = telemetry?.flag_status || 'GREEN';
@@ -65,17 +61,6 @@ export const PitWallHeader: React.FC<PitWallHeaderProps> = ({
         </div>
 
         <div className="h-4 w-px bg-zinc-800 hidden md:block" />
-
-        {/* Python Inspector Button */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onOpenCodeModal}
-          className="h-7 text-xs font-mono gap-1.5 border-zinc-800 text-zinc-300 hover:text-zinc-100"
-        >
-          <Cpu className="w-3.5 h-3.5 text-zinc-400" />
-          <span>Python Vectorized Engine</span>
-        </Button>
 
         {/* Connection Status */}
         <div className="flex items-center gap-1.5 text-[11px]">

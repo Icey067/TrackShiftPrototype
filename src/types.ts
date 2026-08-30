@@ -58,6 +58,15 @@ export interface CarTelemetryInfo {
   flag_status: 'GREEN' | 'YELLOW' | 'VSC' | 'SAFETY_CAR' | 'RED';
 }
 
+export interface PlaybackState {
+  mode: 'SYNTHETIC' | 'REPLAY';
+  current_index?: number;
+  total_laps?: number;
+  speed: number;
+  is_playing: boolean;
+  session_title: string;
+}
+
 export interface TelemetryPacket {
   lap_number: number;
   stint_lap: number;
@@ -72,6 +81,7 @@ export interface TelemetryPacket {
   tyre_metrics: TyreMetrics;
   sectors: SectorTimes;
   car_telemetry: CarTelemetryInfo;
+  playback?: PlaybackState;
 }
 
 export interface InitialSyncPacket {
@@ -84,6 +94,7 @@ export interface InitialSyncPacket {
     gap_to_ahead: number;
     fuel_remaining_kg: number;
     flag_status: string;
+    playback?: PlaybackState;
   };
 }
 
@@ -175,19 +186,62 @@ export interface CrossoverAnalyticsData {
 }
 
 /* =========================================================================
- * REAL-WORLD DATASET & DASHBOARD NAVIGATION
+ * FASTF1 & REAL-WORLD INGESTION ENGINE TYPES
  * ========================================================================= */
 
 export type DashboardTab = 'pit-wall' | 'validation' | 'crossover';
-export type TelemetryDataSource = 'SYNTHETIC_LIVE' | 'REAL_WORLD_F1';
+export type TelemetryDataSource = 'SYNTHETIC_LIVE' | 'FASTF1_SESSION' | 'CUSTOM_FILE' | 'REAL_WORLD_F1';
 
-export interface RealWorldSessionInfo {
-  id: string;
+export interface FastF1Driver {
+  code: string;
   name: string;
-  year: number;
-  track: string;
+  number: number;
+  team: string;
+}
+
+export interface FastF1Catalog {
+  years: number[];
+  grand_prix: string[];
+  sessions: string[];
+  drivers: FastF1Driver[];
+  circuit_benchmarks: Record<string, { circuit: string; base_pace: number; pit_loss: number; laps: number }>;
+}
+
+export interface IngestedSessionData {
+  session_id: string;
+  title: string;
+  year?: number;
+  grand_prix?: string;
+  circuit?: string;
+  session?: string;
   driver: string;
+  driver_name: string;
+  driver_number: number;
+  team: string;
   compound: CompoundCode;
-  laps_total: number;
-  condition: string;
+  total_laps: number;
+  filename?: string;
+  ingestion_source?: string;
+  laps: Array<{
+    lap_number: number;
+    stint_lap: number;
+    raw_lap_time: number;
+    compound: string;
+    sectors: SectorTimes;
+    gap_to_ahead: number;
+    flag_status: string;
+    is_out_lap: boolean;
+    is_in_lap: boolean;
+    track_temp_c: number;
+    ambient_temp_c: number;
+  }>;
+}
+
+export interface BatchAnalysisResult {
+  laps: TelemetryPacket[];
+  validation_laps: ValidationLapPoint[];
+  metrics: ValidationMetricsSummary;
+  detected_cliff_lap: number;
+  expected_cliff_lap: number;
+  deg_rate_sec_per_lap: number;
 }

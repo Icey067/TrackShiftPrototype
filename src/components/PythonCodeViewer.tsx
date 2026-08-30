@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Copy, Check, FileCode, Terminal, Sparkles, Cpu } from 'lucide-react';
+import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 
 interface PythonCodeViewerProps {
   isOpen: boolean;
@@ -7,11 +9,13 @@ interface PythonCodeViewerProps {
 }
 
 export const PythonCodeViewer: React.FC<PythonCodeViewerProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'main' | 'state'>('main');
+  const [activeTab, setActiveTab] = useState<'physics' | 'fetcher' | 'parser' | 'main'>('physics');
   const [copied, setCopied] = useState(false);
-  const [files, setFiles] = useState<{ 'main.py': string; 'state_manager.py': string }>({
+  const [files, setFiles] = useState<Record<string, string>>({
+    'physics_engine.py': '',
+    'f1_fetcher.py': '',
+    'file_parser.py': '',
     'main.py': '',
-    'state_manager.py': '',
   });
   const [loading, setLoading] = useState(true);
 
@@ -31,7 +35,22 @@ export const PythonCodeViewer: React.FC<PythonCodeViewerProps> = ({ isOpen, onCl
 
   if (!isOpen) return null;
 
-  const currentCode = activeTab === 'main' ? files['main.py'] : files['state_manager.py'];
+  const getActiveCode = () => {
+    switch (activeTab) {
+      case 'physics':
+        return files['physics_engine.py'] || '# Vectorized NumPy Physics Engine';
+      case 'fetcher':
+        return files['f1_fetcher.py'] || '# FastF1 & OpenF1 Session Ingestion Fetcher';
+      case 'parser':
+        return files['file_parser.py'] || '# Universal CSV / JSON File Parser';
+      case 'main':
+        return files['main.py'] || '# FastAPI Server';
+      default:
+        return '';
+    }
+  };
+
+  const currentCode = getActiveCode();
 
   const handleCopy = () => {
     if (!currentCode) return;
@@ -41,30 +60,36 @@ export const PythonCodeViewer: React.FC<PythonCodeViewerProps> = ({ isOpen, onCl
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-      <div className="glass-card w-full max-w-5xl h-[85vh] rounded-lg border border-slate-700 flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="w-full max-w-5xl h-[85vh] rounded-xl border border-zinc-800 bg-zinc-950 flex flex-col shadow-2xl overflow-hidden font-sans text-zinc-100">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/60">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/60">
           <div>
-            <h2 className="text-base font-bold text-white font-mono uppercase tracking-wider">
-              Python 3.11+ FastAPI &amp; NumPy Telemetry Service
+            <div className="flex items-center gap-2 mb-0.5">
+              <Badge variant="outline" className="text-[10px] text-sky-400">
+                NUMPY &amp; FASTF1 ENGINE
+              </Badge>
+              <span className="text-xs text-zinc-500 font-mono">Python 3.14+ Production Engine</span>
+            </div>
+            <h2 className="text-base font-semibold text-zinc-100 font-mono tracking-tight">
+              TrackShift Mathematics &amp; Ingestion Architecture
             </h2>
-            <p className="text-xs text-slate-400 font-mono">
-              Production source code for the F1 Noise Cancellation Engine
-            </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-mono text-slate-300 transition active:scale-95"
+              className="h-7 text-xs font-mono gap-1.5 border-zinc-800 text-zinc-300"
             >
               {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copied ? 'Copied' : 'Copy Code'}</span>
-            </button>
+            </Button>
+
             <button
               onClick={onClose}
-              className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-slate-200 transition"
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 transition cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -72,54 +97,49 @@ export const PythonCodeViewer: React.FC<PythonCodeViewerProps> = ({ isOpen, onCl
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex items-center justify-between px-6 py-2.5 border-b border-slate-800 bg-slate-950/50">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('main')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-mono font-semibold transition ${
-                activeTab === 'main'
-                  ? 'bg-slate-800 text-cyan-400 border border-slate-700 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <FileCode className="w-3.5 h-3.5 text-cyan-400" />
-              <span>backend/main.py</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('state')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-mono font-semibold transition ${
-                activeTab === 'state'
-                  ? 'bg-slate-800 text-cyan-400 border border-slate-700 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <FileCode className="w-3.5 h-3.5 text-cyan-400" />
-              <span>backend/state_manager.py</span>
-            </button>
+        <div className="flex items-center justify-between px-6 py-2 border-b border-zinc-800 bg-zinc-950">
+          <div className="flex items-center gap-1.5">
+            {[
+              { id: 'physics', label: 'physics_engine.py', tag: 'NumPy Math' },
+              { id: 'fetcher', label: 'f1_fetcher.py', tag: 'FastF1 & OpenF1' },
+              { id: 'parser', label: 'file_parser.py', tag: 'CSV Parser' },
+              { id: 'main', label: 'main.py', tag: 'FastAPI WS' },
+            ].map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setActiveTab(t.id as any)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono transition cursor-pointer ${
+                  activeTab === t.id
+                    ? 'bg-zinc-800 text-zinc-100 font-semibold border border-zinc-700 shadow-xs'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <FileCode className="w-3.5 h-3.5 text-sky-400" />
+                <span>{t.label}</span>
+              </button>
+            ))}
           </div>
 
-          <div className="hidden sm:flex items-center gap-3 text-[11px] font-mono text-slate-400">
+          <div className="hidden sm:flex items-center gap-3 text-[11px] font-mono text-zinc-500">
             <span className="flex items-center gap-1 text-emerald-400">
               <Terminal className="w-3.5 h-3.5" />
-              <span>FastAPI WebSockets</span>
+              <span>Vectorized NumPy</span>
             </span>
             <span>•</span>
-            <span className="text-cyan-400">NumPy Vectorized</span>
-            <span>•</span>
-            <span className="text-amber-400">Redis State Hash</span>
+            <span className="text-sky-400">Disk Cached</span>
           </div>
         </div>
 
         {/* Code Content Area */}
-        <div className="flex-1 overflow-auto p-6 bg-slate-950 font-mono text-xs text-slate-300 leading-relaxed select-text">
+        <div className="flex-1 overflow-auto p-6 bg-zinc-950 font-mono text-xs text-zinc-300 leading-relaxed select-text">
           {loading ? (
-            <div className="flex items-center justify-center h-full text-slate-500">
-              <Sparkles className="w-6 h-6 text-cyan-400 animate-spin mr-2" />
-              <span>Loading backend source code...</span>
+            <div className="flex items-center justify-center h-full text-zinc-500">
+              <Sparkles className="w-6 h-6 text-sky-400 animate-spin mr-2" />
+              <span>Loading engine source code...</span>
             </div>
           ) : (
-            <pre className="whitespace-pre overflow-x-auto text-slate-300">
-              <code>{currentCode || '# Code loaded from /backend/'}</code>
+            <pre className="whitespace-pre overflow-x-auto text-zinc-300">
+              <code>{currentCode}</code>
             </pre>
           )}
         </div>
