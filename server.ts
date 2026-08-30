@@ -1346,7 +1346,7 @@ Current Telemetry:
 Provide a 2-3 sentence authentic, punchy F1 Pit Wall radio communication message to the driver, highlighting true tyre degradation state vs. raw timing distortion, followed by 2 bullet points on tactical strategy (box timing, tyre management). Keep it highly technical, professional, and realistic like Gianpiero Lambiase or Peter Bonnington.`;
 
     const result = await geminiRotator.generateContent(prompt, {
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.5-flash',
       systemInstruction: 'You are an elite Formula 1 Chief Race Strategist and Race Engineer on the pit wall.',
       temperature: 0.3,
       maxOutputTokens: 500,

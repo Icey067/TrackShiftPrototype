@@ -216,7 +216,7 @@ class GeminiKeyRotator {
       maxOutputTokens?: number;
     } = {}
   ): Promise<{ text: string; keyUsed: string; model: string }> {
-    const modelName = options.model || process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+    const modelName = options.model || process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 
     return this.executeWithRoundRobin(async (client, keyInfo) => {
       const response = await client.models.generateContent({
